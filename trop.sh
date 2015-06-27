@@ -48,10 +48,10 @@ trop_private ()
 	
 	. $scrdir/tropriv.sh
 
-	if [ "$1" == 'seth' ]; then
+	if [ "$1" = 'seth' ]; then
 		. $scrdir/tropriv.sh "$@" && return 0 || return 1
 	fi
-	if [ "$1" == 'seta' ]; then
+	if [ "$1" = 'seta' ]; then
 		. $scrdir/tropriv.sh "$@" && return 0 || return 1
 	fi
 	
@@ -107,7 +107,7 @@ trop_seed_ulrate ()
 		local tmpo=`expr $tmpn % 2`
 		if [ ! $tmpo ]; then
 			while ((tmpn < ll)); do
-				tmp="$tmp  " && tmpn+=2;
+				tmp="$tmp  " && tmpn=tmpn+2;
 			done;
 		else
 			while ((tmpn < ll)); do
@@ -132,23 +132,23 @@ trop_seed_tracker ()
 {
 	trop_common
 	
-	if [ "$1" == '' ] || [ "$2" != '' ]; then usage && exit 0; fi
+	if [ "$1" = '' ] || [ "$2" != '' ]; then usage && exit 0; fi
     # tracker checking...
 	echo tracker not found || { echo error ; exit 1; }
 }
 
 trop_make_file ()
 {
-	if [ "$1" == 'r' ]; then
-		if [ "$2" == 'm' ]; then printf "$(tmf_mkr)" && return 0 || return 1; fi
+	if [ "$1" = 'r' ]; then
+		if [ "$2" = 'm' ]; then printf "$(tmf_mkr)" && return 0 || return 1; fi
 		tmf_prefix="regfile"
 		tmf_mkr ()
 		{
 			tmf_mkreg=`touch "$(tmf_fname)"` && \
 			 return 0 || return 1;
 		}
-	elif [ "$1" == 'p' ]; then
-		if [ "$2" == 'm' ]; then printf "%s" "$(tmf_mkp)" && return 0 || return 1; fi
+	elif [ "$1" = 'p' ]; then
+		if [ "$2" = 'm' ]; then printf "%s" "$(tmf_mkp)" && return 0 || return 1; fi
 		tmf_prefix="np"
 		tmf_mkp ()
 		{
@@ -168,14 +168,24 @@ trop_make_file ()
 	printf "$(trop_make_file $1 m)" && return 0;
 }
 
+trop_tracker_get()
+{
+    if [ -z $TROP_TRACKER ]; then
+        TROP_TRACKER="$(cat ${scrdir}/.cache/trackers)"
+        tmp=${TROP_TRACKER:?'tracker file not found!'} && unset tmp;
+    fi    
+    if [ -z $TROP_TREQ ]; then
+        TROP_TREQ=$(grep -E "${1}\s*{tracker: " <<<"$TROP_TRACKER");
+    fi
+}
 trop_tracker_total ()
 {
     # add tracker stuff	
 	ttt_t="$1"	
 	ttt_tt=1
-	if [ ! -e "$scrdir/.cache/ttt_"$1"_lstp" ]; then 
-		touch $scrdir/.cache/ttt_"$1"_lstp
-		ttt_lst="$(trop_torrent l|grep -v '^Sum'|grep -v '^ID')" && <<<"$ttt_lst" cat > "$scrdir/.cache/ttt_"$1"_lstp" || exit 1
+	if [ ! -e "${scrdir}/.cache/ttt_"$1"_lstp" ]; then 
+		touch ${scrdir}/.cache/ttt_"$1"_lstp
+		ttt_lst="$(trop_torrent l|grep -v '^Sum'|grep -v '^ID')" && <<<"$ttt_lst" cat > "${scrdir}/.cache/ttt_"$1"_lstp" || exit 1
 	else
 		ttt_lst="$(<<<"$(trop_torrent l) grep -v '^Sum'|grep -v '^ID'")" || exit 1
 	fi
@@ -206,7 +216,7 @@ trop_tracker_total ()
 	# a="$(<<<"$ttt_ta" grep "$ttt_t" -B 3 |grep Name | cut -b3-)"
 	# b="$(<<<"$ttt_ta" grep "$ttt_t" -A 8 |grep Name | cut -b3-)"
 	
-	if [ "$ttt_diffu" == 1 ]; then
+	if [ "$ttt_diffu" = 1 ]; then
 		ttt_s="$(<<<"$ttt_ta" grep "$ttt_t" -A 14 |grep Downloaded -A 2 |cut -b 2-)"
 	else
 		if [ -e "$scrdir/.cache/ttt_"$1"_ttotal" ]; then
@@ -226,7 +236,7 @@ trop_tracker_total ()
 			while read -r l; do
 			if [ -n "$(<<<"$l" grep PATH)" ]; then continue; fi
 
-			if [ "$l" == 'None' ]; then
+			if [ "$l" = 'None' ]; then
 				continue
 			elif [ -n "$(<<<"$l" grep GB)" ]; then
 				ttt_tdn=`<<<"scale=2; $ttt_tdn + $(<<<"$l" tr -d '[:alpha:]')" bc`
@@ -269,7 +279,7 @@ args_look_ahead ()
 	
 noarg=${@:?"$(printf "\n%s" "$(usage)")"}
 alias transmission-remote="$(which transmission-remote)";
-if [ "$(alias 'transmission-remote' 2>/dev/null)" == "transmission-remote=''" ]; then
+if [ "$(alias 'transmission-remote' 2>/dev/null)" = "transmission-remote=''" ]; then
     echo 'transmission remote not found in PATH!' ; exit 1;
 fi
 # check if file used to call the script is a link or the script file itself
@@ -335,7 +345,7 @@ while [ $1 ]; do
 		trop_private && \
 		shift && \
 		if [ -n "$4" ]; then echo 'multi opt not allowed' ; exit 0; fi
-		if [ "$1" == 'dl' ]; then
+		if [ "$1" = 'dl' ]; then
 		    trop_torrent l | awk '$9 == "Downloading" || $9 == "Up & Down"' || exit 1;
             shift;
 		else
@@ -357,6 +367,9 @@ while [ $1 ]; do
 		;;
         -*)
         echo ${0}: 'bad option `'${1}"'" && usage && exit 0;
+        ;;
+        *)
+        echo ${0}: unrecognized input && usage && exit 0;
         ;;
 		esac
 	done

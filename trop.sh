@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # TODO: implement mass location change
-#		real tracker checking
+#       real tracker checking
 
 TROP_VERSION=\
 'trop 0.1.0
@@ -15,17 +15,17 @@ trop.sh - transmission-remote text operations
 usage: `basename $0` [-b host:port] [-a auth] [options]
 
 options:
- -b							set host and port to connect to
- -a							set authorization information
- -p							pass flags directly to tr-remote - note: keep all flags in a single quotation!
- -ns						list number of torrents actively seeding
- -si						list information about active torrents
- -sul						list active torrents and their upload rates
- -tul	<tracker-alias>		list active torrents and their upload rates by tracker
- -ts	<tracker-alias>		list active torrents by tracker
- -t		<torrent-id> <opts>	pass tr-remote option to torrent
- -V							show version information, including last version of tr-remote checked against
- -h							show this output
+ -b                          set host and port to connect to
+ -a                          set authorization information
+ -p                          pass flags directly to tr-remote - note: keep all flags in a single quotation!
+ -ns                         list number of torrents actively seeding
+ -si                         list information about active torrents
+ -sul                        list active torrents and their upload rates
+ -tul    <tracker-alias>     list active torrents and their upload rates by tracker
+ -ts     <tracker-alias>     list active torrents by tracker
+ -t      <torrent-id> <opts> pass tr-remote option to torrent
+ -V                          show version information, including last version of tr-remote checked against
+ -h                          show this output
 EOF
 
 	exit 0;
@@ -75,8 +75,8 @@ trop_seed_info ()
 	checki () { if [ "$itmp" = `expr $i - 1` ]; then return 0; else return 1; fi }
 	# XXX: needs work
 	if [ "$trsltmp" = '' ]; then { echo trsl error ; exit 1 ;} fi ; while ((i <= $(<<<"$trsltmp" wc -l))); do
-		trop_torrent $(<<<"$trsltmp" awk NR==$i) i && echo ----- && itmp=$i && ((i++)) && checki || i=1000 ; done \
-		; if [ $i = 1000 ] && [ ! $? ]; then { echo trt error ; exit 1 ;}; fi ; exit 0
+	    trop_torrent $(<<<"$trsltmp" awk NR==$i) i && echo ----- && itmp=$i && ((i++)) && checki || i=1000 ; done \
+	    ; if [ $i = 1000 ] && [ ! $? ]; then { echo trt error ; exit 1 ;}; fi ; exit 0
 
 	# trt error handling -
 	# if itmp is i-1 then trt was successful, so ret true
@@ -232,36 +232,35 @@ trop_tracker_total ()
 	grep PATH /etc/profile > "$ttt_np" &
 
 	# total dl as seen by tracker (does not include freeleech downloads)
-			<<<"$ttt_d" cat > "$ttt_np" &
-			while read -r l; do
-			if [ -n "$(<<<"$l" grep PATH)" ]; then continue; fi
+	<<<"$ttt_d" cat > "$ttt_np" &
+	while read -r l; do
+		if [ -n "$(<<<"$l" grep PATH)" ]; then continue; fi
 
-			if [ "$l" = 'None' ]; then
-				continue
-			elif [ -n "$(<<<"$l" grep GB)" ]; then
-				ttt_tdn=`<<<"scale=2; $ttt_tdn + $(<<<"$l" tr -d '[:alpha:]')" bc`
-			elif [ -n "$(<<<"$l" grep MB)" ]; then
-				ttt_ltmp=`<<<"$l" tr -d '[:alpha:]'`
-				ttt_tdn=`<<<"scale=2; $ttt_tdn + ( $ttt_ltmp / 1000 )" bc`
-			elif [ -n "$(<<<"$1" grep KB)" ]; then
-				ttt_ltmp=`<<<"$l" tr -d '[:alpha:]'`
-				ttt_tdn=`<<<"scale=2; $ttt_tdn + ( $ttt_ltmp / 1000000 )" bc`
-			fi
-
-				done < "$ttt_np" # use prefix in loop because env is exported to it
+		if [ "$l" = 'None' ]; then
+			continue
+		elif [ -n "$(<<<"$l" grep GB)" ]; then
+			ttt_tdn=`<<<"scale=2; $ttt_tdn + $(<<<"$l" tr -d '[:alpha:]')" bc`
+		elif [ -n "$(<<<"$l" grep MB)" ]; then
+			ttt_ltmp=`<<<"$l" tr -d '[:alpha:]'`
+			ttt_tdn=`<<<"scale=2; $ttt_tdn + ( $ttt_ltmp / 1000 )" bc`
+		elif [ -n "$(<<<"$1" grep KB)" ]; then
+			ttt_ltmp=`<<<"$l" tr -d '[:alpha:]'`
+			ttt_tdn=`<<<"scale=2; $ttt_tdn + ( $ttt_ltmp / 1000000 )" bc`
+		fi
+	done < "$ttt_np" # use prefix in loop because env is exported to it
 
 	echo "total downloaded: $(<<<"$ttt_tdn" sed 's/0*$//') GB" && rm "$ttt_np" &&
-			printf "%s GB\n" "$(<<<"$ttt_tdn" cat)" > $scrdir/.cache/ttt_"$1"_ttotal && exit 0 || exit 1
+	printf "%s GB\n" "$(<<<"$ttt_tdn" cat)" > $scrdir/.cache/ttt_"$1"_ttotal && exit 0 || exit 1
 }
 
 trop_torrent ()
 {
 	if [ -n "$1" ] && [ -z "$2" ]; then
 		transmission-remote $(uhc) -n "$AUTH" -$1 || { echo "transmission-remote error" ; exit 1 ;} && exit 0;
-		fi
+	fi
 	if [ -z "$1" ]; then
 		usage && exit 0;
-		fi
+	fi
 	transmission-remote $(uhc) -n "$AUTH" -t $1 -$2 || exit 1
 }
 
@@ -350,7 +349,7 @@ while [ $1 ]; do
 			shift
 		else
 			trop_torrent $1 $2 || exit 1;
-		shift ; shift
+			shift ; shift
 		fi
 		;;
 		-p)

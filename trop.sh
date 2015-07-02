@@ -1,10 +1,10 @@
 #!/bin/sh
 #
 # TODO: implement mass location change
-# 	real tracker checking
+#		real tracker checking
 
 TROP_VERSION=\
-'trop 0.0.1
+'trop 0.1.0
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -15,17 +15,17 @@ trop.sh - transmission-remote text operations
 usage: `basename $0` [-b host:port] [-a auth] [options]
 
 options:
- -b				  	set host and port to connect to
- -a				  	set authorization information
- -p					pass flags directly to tr-remote - note: keep all flags in a single quotation!
- -ns				  	list number of torrents actively seeding
- -si				  	list information about active torrents
- -sul		 	          	list active torrents and their upload rates 
- -tul		<tracker-alias>		list active torrents and their upload rates by tracker
- -ts		<tracker-alias>		list active torrents by tracker 
+ -b							set host and port to connect to
+ -a							set authorization information
+ -p							pass flags directly to tr-remote - note: keep all flags in a single quotation!
+ -ns						list number of torrents actively seeding
+ -si						list information about active torrents
+ -sul						list active torrents and their upload rates
+ -tul	<tracker-alias>		list active torrents and their upload rates by tracker
+ -ts	<tracker-alias>		list active torrents by tracker
  -t		<torrent-id> <opts>	pass tr-remote option to torrent
- -V					show version information, including last version of tr-remote checked against
- -h					show this output
+ -V							show version information, including last version of tr-remote checked against
+ -h							show this output
 EOF
 
 	exit 0;
@@ -45,7 +45,7 @@ trop_common ()
 trop_private ()
 {
 	if [ "$auser" = 1 ] && [ "$huser" = 1 ]; then return 0; fi
-	
+
 	. $scrdir/tropriv.sh
 
 	if [ "$1" = 'seth' ]; then
@@ -54,7 +54,7 @@ trop_private ()
 	if [ "$1" = 'seta' ]; then
 		. $scrdir/tropriv.sh "$@" && return 0 || return 1
 	fi
-	
+
 	return 0;
 }
 
@@ -68,15 +68,15 @@ trop_seed_info ()
 {
 	trsl="$(trop_seed_list)" || exit 1
 	trsltmp="$(<<<"$trsl" cut -b2-4 | tr -d '[:blank:]')"
-	
+
 	i=1
 	itmp=${i}
 
 	checki () { if [ "$itmp" = `expr $i - 1` ]; then return 0; else return 1; fi }
 	# XXX: needs work
-	if [ "$trsltmp" = '' ]; then { echo trsl error ; exit 1 ;} fi ; while ((i <= $(<<<"$trsltmp" wc -l))); do 
-        trop_torrent $(<<<"$trsltmp" awk NR==$i) i && echo ----- && itmp=$i && ((i++)) && checki || i=1000 ; done \
-	    ; if [ $i = 1000 ] && [ ! $? ]; then { echo trt error ; exit 1 ;}; fi ; exit 0
+	if [ "$trsltmp" = '' ]; then { echo trsl error ; exit 1 ;} fi ; while ((i <= $(<<<"$trsltmp" wc -l))); do
+		trop_torrent $(<<<"$trsltmp" awk NR==$i) i && echo ----- && itmp=$i && ((i++)) && checki || i=1000 ; done \
+		; if [ $i = 1000 ] && [ ! $? ]; then { echo trt error ; exit 1 ;}; fi ; exit 0
 
 	# trt error handling -
 	# if itmp is i-1 then trt was successful, so ret true
@@ -94,7 +94,7 @@ trop_seed_ulrate ()
 
 	if [ -n "$1" ]; then
 		trop_seed_tracker_stats "$1"
-	else 
+	else
 	a=$(<<<"$trsi" grep '^  Name' | cut -b3-)
 	b=$(<<<"$trsi" grep Upload\ Speed)
 	ll=`expr $(wc -L <<< "$a") + 1`
@@ -120,8 +120,8 @@ trop_seed_ulrate ()
 }
 
 trop_seed_tracker_stats ()
-{		
-    	exit 0; # add tracker stuff	
+{
+	exit 0; # add tracker stuff
 	a=$(<<<"$trsi" grep "$t" -B3 | grep Name | cut -b3-) || exit 1
 	b=$(<<<"$trsi" grep "$t" -A8 | grep '^  Upload Speed')
 	ll=`expr $(wc -L <<< "$a") + 1`
@@ -131,9 +131,9 @@ trop_seed_tracker_stats ()
 trop_seed_tracker ()
 {
 	trop_common
-	
+
 	if [ "$1" = '' ] || [ "$2" != '' ]; then usage && exit 0; fi
-    	# tracker checking...
+	# tracker checking...
 	echo tracker not found || { echo error ; exit 1 ;}
 }
 
@@ -153,16 +153,16 @@ trop_make_file ()
 		tmf_mkp ()
 		{
 			tmf_mkfifo=`mkfifo "$(tmf_fname)"` && \
-			 return 0 || return 1;
+			return 0 || return 1;
 		}
 	else
 		 echo trop_make_file: file not recognized && exit 1;
 	fi
 	tmf_fname ()
-    {
-        while true; do
-            printf `mktemp -qu ${tmf_prefix}_trop.XXXXX` && return 0;
-        done
+	{
+		while true; do
+			printf `mktemp -qu ${tmf_prefix}_trop.XXXXX` && return 0;
+		done
 	}
 
 	printf "$(trop_make_file $1 m)" && return 0;
@@ -170,32 +170,32 @@ trop_make_file ()
 
 trop_tracker_get()
 {
-    if [ -z $TROP_TRACKER ]; then
-        TROP_TRACKER="$(cat ${scrdir}/.cache/trackers)"
-        tmp=${TROP_TRACKER:?'tracker file not found!'} && unset tmp;
-    fi    
-    if [ -z $TROP_TREQ ]; then
-        TROP_TREQ=$(grep -E "${1}\s*{tracker: " <<<"$TROP_TRACKER");
-    fi
+	if [ -z $TROP_TRACKER ]; then
+		TROP_TRACKER="$(cat ${scrdir}/.cache/trackers)"
+		tmp=${TROP_TRACKER:?'tracker file not found!'} && unset tmp;
+	fi
+	if [ -z $TROP_TREQ ]; then
+		TROP_TREQ=$(grep -E "${1}\s*{tracker: " <<<"$TROP_TRACKER");
+	fi
 }
 trop_tracker_total ()
 {
-    # add tracker stuff	
-	ttt_t="$1"	
+	# add tracker stuff
+	ttt_t="$1"
 	ttt_tt=1
-	if [ ! -e "${scrdir}/.cache/ttt_"$1"_lstp" ]; then 
+	if [ ! -e "${scrdir}/.cache/ttt_"$1"_lstp" ]; then
 		touch ${scrdir}/.cache/ttt_"$1"_lstp
 		ttt_lst="$(trop_torrent l| grep -v '^Sum'| grep -v '^ID')" && <<<"$ttt_lst" cat > "${scrdir}/.cache/ttt_"$1"_lstp" || exit 1
 	else
 		ttt_lst="$(<<<"$(trop_torrent l) grep -v '^Sum'| grep -v '^ID'")" || exit 1
 	fi
-	if [ -n "$(ttt_diff="$(diff --unchanged-line-format='' - $scrdir/.cache/ttt_"$1"_lstp <<<"$ttt_lst")")" ]; then 
+	if [ -n "$(ttt_diff="$(diff --unchanged-line-format='' - $scrdir/.cache/ttt_"$1"_lstp <<<"$ttt_lst")")" ]; then
 		ttt_diffl=<<<"$("$ttt_diff" cut -b 2 | cut -f1 -d ' '| tr -d '[:blank:]')" || exit 2
-    fi
-	
+	fi
+
 	ttt_i=1
 	ttt_tac=0;
-	
+
 	echo checking all torrent info...
 	if [ ! -e "$scrdir/.cache/ttt_"$1"_tap" ]; then # first permanent cache only should run once ever
 		echo 'caching all torrent info'
@@ -203,19 +203,19 @@ trop_tracker_total ()
 		echo "$ttt_ta" > $scrdir/.cache/ttt_"$1"_tap && ttt_tac=1 || exit 1
 	fi
 
-	if [ -n "$ttt_diffl" ]; then 
+	if [ -n "$ttt_diffl" ]; then
 		ttt_tta=`cat $scrdir/.cache/ttt_"$1"_tap`
 		ttt_difftn=$(<<<"diffl" wc -l)
 		for ((i=0;i < ttt_difftn;i++)); do
-			ttt_tta=`printf "%s\n%s" "$ttt_ta" "$(trop_torrent "`<<<"$ttt_diffl" awk NR==$i`" i)"`		
+			ttt_tta=`printf "%s\n%s" "$ttt_ta" "$(trop_torrent "`<<<"$ttt_diffl" awk NR==$i`" i)"`
 		done
 		ttt_diffu=1
-	fi 
-	
+	fi
+
 	echo grabbing tracker details...;echo
 	# a="$(<<<"$ttt_ta" grep "$ttt_t" -B 3 | grep Name | cut -b3-)"
 	# b="$(<<<"$ttt_ta" grep "$ttt_t" -A 8 | grep Name | cut -b3-)"
-	
+
 	if [ "$ttt_diffu" = 1 ]; then
 		ttt_s="$(<<<"$ttt_ta" grep "$ttt_t" -A 14 | grep Downloaded -A 2 | cut -b 2-)"
 	else
@@ -225,12 +225,12 @@ trop_tracker_total ()
 		ttt_s="$(<<<"$(cat $scrdir/.cache/ttt_"$1"_tap)" grep "$ttt_t" -A 14 | grep Downloaded -A 2 | cut -b 2-)"
 	fi
 	ttt_d="$(<<<"$ttt_s" grep Downloaded | tr -d '[:blank:]' | cut -b 12-)"
-	ttt_tdn=0	
-	
+	ttt_tdn=0
+
 	ttt_np=`trop_make_file p`
-	
+
 	grep PATH /etc/profile > "$ttt_np" &
-	
+
 	# total dl as seen by tracker (does not include freeleech downloads)
 			<<<"$ttt_d" cat > "$ttt_np" &
 			while read -r l; do
@@ -247,10 +247,10 @@ trop_tracker_total ()
 				ttt_ltmp=`<<<"$l" tr -d '[:alpha:]'`
 				ttt_tdn=`<<<"scale=2; $ttt_tdn + ( $ttt_ltmp / 1000000 )" bc`
 			fi
-			
+
 				done < "$ttt_np" # use prefix in loop because env is exported to it
 
-	echo "total downloaded: $(<<<"$ttt_tdn" sed 's/0*$//') GB" && rm "$ttt_np" && 
+	echo "total downloaded: $(<<<"$ttt_tdn" sed 's/0*$//') GB" && rm "$ttt_np" &&
 			printf "%s GB\n" "$(<<<"$ttt_tdn" cat)" > $scrdir/.cache/ttt_"$1"_ttotal && exit 0 || exit 1
 }
 
@@ -258,10 +258,10 @@ trop_torrent ()
 {
 	if [ -n "$1" ] && [ -z "$2" ]; then
 		transmission-remote $(uhc) -n "$AUTH" -$1 || { echo "transmission-remote error" ; exit 1 ;} && exit 0;
-    	fi
+		fi
 	if [ -z "$1" ]; then
 		usage && exit 0;
-    	fi
+		fi
 	transmission-remote $(uhc) -n "$AUTH" -t $1 -$2 || exit 1
 }
 
@@ -276,32 +276,32 @@ args_look_ahead ()
 }
 
 # ---------- main -------------
-	
+
 noarg=${@:?"$(printf "\n%s" "$(usage)")"}
 alias transmission-remote="$(which transmission-remote)";
 if [ "$(alias 'transmission-remote' 2>/dev/null)" = "transmission-remote=''" ]; then
-    echo 'transmission remote not found in PATH!' ; exit 1;
+	echo 'transmission remote not found in PATH!' ; exit 1;
 fi
 # check if file used to call the script is a link or the script file itself
 res="$(<<<"$0" grep -qEx '.*\.sh$')" && \
-    { \
-        { res="$(<<<"$0" grep -qEx '^\./{1}')" && \
-          scrdir="." ;} \
-        || \
-        { res="$(<<<"$0" grep -qEx '[^/]+')" && \
-          scrdir="." ;} \
-        || \
-	    scrdir="$(<<<"$0" sed 's/\/\+[^\/]\+$//')" \
-   ;} \
+	{ \
+		{ res="$(<<<"$0" grep -qEx '^\./{1}')" && \
+	  	  scrdir="." ;} \
+		  || \
+		{ res="$(<<<"$0" grep -qEx '[^/]+')" && \
+	  	  scrdir="." ;} \
+		  || \
+		scrdir="$(<<<"$0" sed 's/\/\+[^\/]\+$//')" \
+	;}
 || \
 scrdir="$(<<<"$(ls -l $0)" sed -e 's/^.*-> //;s/\/\+[^\/]\+$//')"
 
 auser=0
 huser=${auser}
-	
+
 while [ $1 ]; do
-    case $1 in
-	    -a)
+	case $1 in
+		-a)
 		shift && \
 		trop_private "seta" "$1" && auser=1 && shift || { echo 'bad auth' && exit 1 ;}
 		;;
@@ -309,13 +309,13 @@ while [ $1 ]; do
 		shift && \
 		trop_private "seth" "$1" && huser=1 && shift || { echo 'bad user/host' && exit 1 ;}
 		;;
-		-ns) 
+		-ns)
 		shift;
 		trop_private && \
 		trop_num_seed || exit 1;
 		;;
 		-si)
-		shift;
+		shift
 		trop_private && \
 		trop_seed_info || exit 1;
 		;;
@@ -328,7 +328,7 @@ while [ $1 ]; do
 		trop_private && \
 		shift && \
 		trop_seed_tracker $1 || exit 1;
-        	shift;
+		shift;
 		;;
 		-tul)
 		trop_private && \
@@ -339,25 +339,25 @@ while [ $1 ]; do
 		trop_private && \
 		shift && \
 		trop_tracker_total $1 || exit 1;
-        	shift;
+		shift
 		;;
 		-t)
 		trop_private && \
 		shift && \
 		if [ -n "$4" ]; then echo 'multi opt not allowed' ; exit 0; fi
 		if [ "$1" = 'dl' ]; then
-		    trop_torrent l | awk '$9 == "Downloading" || $9 == "Up & Down"' || exit 1;
-            	shift;
+			trop_torrent l | awk '$9 == "Downloading" || $9 == "Up & Down"' || exit 1;
+			shift
 		else
-		    trop_torrent $1 $2 || exit 1;
-            	shift ; shift;
+			trop_torrent $1 $2 || exit 1;
+		shift ; shift
 		fi
 		;;
 		-p)
 		trop_private && \
 		shift && \
 		transmission-remote $(uhc) -n "$AUTH" $(eval <<<"${1}" cat) || exit 1;
-        	shift;
+		shift
 		;;
 		-V)
 		echo "$TROP_VERSION" && exit 0;
@@ -365,13 +365,13 @@ while [ $1 ]; do
 		-h)
 		usage && exit 0;
 		;;
-        	-*)
-        	echo ${0}: 'bad option `'${1}"'" && usage && exit 0;
-        	;;
-        	*)
-        	echo ${0}: unrecognized input && usage && exit 0;
-        	;;
-		esac
-	done
+		-*)
+		echo ${0}: 'bad option `'${1}"'" && usage && exit 0;
+		;;
+		*)
+		echo ${0}: unrecognized input && usage && exit 0;
+		;;
+	esac
+done
 
 exit 0;

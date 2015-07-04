@@ -2,6 +2,7 @@
 #
 # TODO: implement mass location change
 #       real tracker checking
+#       keep things POSIX
 
 TROP_VERSION=\
 'trop 0.1.0
@@ -66,6 +67,8 @@ trop_num_seed ()
 
 trop_seed_info ()
 {
+	local trsl trsltmp i itmp
+
 	trsl="$(trop_seed_list)" || exit 1
 	trsltmp="$(<<<"$trsl" cut -b2-4 | tr -d '[:blank:]')"
 
@@ -91,20 +94,21 @@ trop_seed_list ()
 trop_seed_ulrate ()
 {
 	trop_common || exit 1
+	local a b ll nl tmp tmpn tmpo
 
 	if [ -n "$1" ]; then
 		trop_seed_tracker_stats "$1"
 	else
-	a=$(<<<"$trsi" grep '^  Name' | cut -b3-)
-	b=$(<<<"$trsi" grep Upload\ Speed)
-	ll=`expr $(wc -L <<< "$a") + 1`
-	nl=$(wc -l <<< "$a")
+		a=$(<<<"$trsi" grep '^  Name' | cut -b3-)
+		b=$(<<<"$trsi" grep Upload\ Speed)
+		ll=`expr $(wc -L <<< "$a") + 1`
+		nl=$(wc -l <<< "$a")
 	fi
 
 	for ((i=1; i <= nl; i++)); do
-		local tmp=$(awk NR==$i <<< "$a" )
-		local tmpn=$(wc -m <<< $tmp)
-		local tmpo=`expr $tmpn % 2`
+		tmp=$(awk NR==$i <<< "$a" )
+		tmpn=$(wc -m <<< $tmp)
+		tmpo=`expr $tmpn % 2`
 		if [ ! $tmpo ]; then
 			while ((tmpn < ll)); do
 				tmp="$tmp  " && tmpn=tmpn+2;
@@ -122,6 +126,8 @@ trop_seed_ulrate ()
 trop_seed_tracker_stats ()
 {
 	exit 0; # add tracker stuff
+	local a b ll nl
+
 	a=$(<<<"$trsi" grep "$t" -B3 | grep Name | cut -b3-) || exit 1
 	b=$(<<<"$trsi" grep "$t" -A8 | grep '^  Upload Speed')
 	ll=`expr $(wc -L <<< "$a") + 1`
@@ -172,15 +178,16 @@ trop_tracker_get()
 {
 	if [ -z $TROP_TRACKER ]; then
 		TROP_TRACKER="$(cat ${scrdir}/.cache/trackers)"
-		tmp=${TROP_TRACKER:?'tracker file not found!'} && unset tmp;
+		local tmp=${TROP_TRACKER:?'tracker file not found!'} && unset tmp
 	fi
 	if [ -z $TROP_TREQ ]; then
-		TROP_TREQ=$(grep -E "${1}\s*{tracker: " <<<"$TROP_TRACKER");
+		TROP_TREQ=$(grep -E "${1}\s*{tracker: " <<<"$TROP_TRACKER")
 	fi
 }
 trop_tracker_total ()
 {
 	# add tracker stuff
+	local ttt_t ttt_ta ttt_tt ttt_lst ttt_diff ttt_diffa ttt_diffl ttt_difftn ttt_diffu ttt_ltmp ttt_s
 	ttt_t="$1"
 	ttt_tt=1
 	if [ ! -e "${scrdir}/.cache/ttt_"$1"_lstp" ]; then
@@ -224,10 +231,10 @@ trop_tracker_total ()
 		fi
 		ttt_s="$(<<<"$(cat $scrdir/.cache/ttt_"$1"_tap)" grep "$ttt_t" -A 14 | grep Downloaded -A 2 | cut -b 2-)"
 	fi
-	ttt_d="$(<<<"$ttt_s" grep Downloaded | tr -d '[:blank:]' | cut -b 12-)"
-	ttt_tdn=0
+	local ttt_d="$(<<<"$ttt_s" grep Downloaded | tr -d '[:blank:]' | cut -b 12-)"
+	local ttt_tdn=0
 
-	ttt_np=`trop_make_file p`
+	local ttt_np=`trop_make_file p`
 
 	grep PATH /etc/profile > "$ttt_np" &
 
@@ -291,7 +298,7 @@ res="$(<<<"$0" grep -qEx '.*\.sh$')" && \
 	  	  scrdir="." ;} \
 		  || \
 		scrdir="$(<<<"$0" sed 's/\/\+[^\/]\+$//')" \
-	;}
+	;} \
 || \
 scrdir="$(<<<"$(ls -l $0)" sed -e 's/^.*-> //;s/\/\+[^\/]\+$//')"
 

@@ -283,11 +283,10 @@ args_look_ahead ()
 
 # ---------- main -------------
 
-noarg=${@:?"$(printf "\n%s" "$(usage)")"}
-alias transmission-remote="$(which transmission-remote)";
-if [ "$(alias 'transmission-remote' 2>/dev/null)" = "transmission-remote=''" ]; then
-	echo 'transmission remote not found in PATH!' ; exit 1;
-fi
+noarg=${@:?"$(printf "\n%s" "$(usage)")"} && unset noarg
+hash transmission-remote 2>/dev/null || \
+{ echo "can't find transmission-remote in PATH!" ; exit 1 ;}
+
 # check if file used to call the script is a link or the script file itself
 res="$(<<<"$0" grep -qEx '.*\.sh$')" && \
 	{ \
@@ -306,48 +305,48 @@ auser=0
 huser=${auser}
 
 while [ $1 ]; do
-	case $1 in
-		-a)
+case $1 in
+	-a)
 		shift && \
 		trop_private "seta" "$1" && auser=1 && shift || { echo 'bad auth' && exit 1 ;}
 		;;
-		-b)
+	-b)
 		shift && \
 		trop_private "seth" "$1" && huser=1 && shift || { echo 'bad user/host' && exit 1 ;}
 		;;
-		-ns)
+	-ns)
 		shift;
 		trop_private && \
 		trop_num_seed || exit 1;
 		;;
-		-si)
+	-si)
 		shift
 		trop_private && \
 		trop_seed_info || exit 1;
 		;;
-		-sul)
+	-sul)
 		shift;
 		trop_private && \
 		trop_seed_ulrate || exit 1;
 		;;
-		-ts)
+	-ts)
 		trop_private && \
 		shift && \
 		trop_seed_tracker $1 || exit 1;
 		shift;
 		;;
-		-tul)
+	-tul)
 		trop_private && \
 		shift && \
 		trop_seed_ulrate $1 || exit 1;
 		;;
-		-tt)
+	-tt)
 		trop_private && \
 		shift && \
 		trop_tracker_total $1 || exit 1;
 		shift
 		;;
-		-t)
+	-t)
 		trop_private && \
 		shift && \
 		if [ -n "$4" ]; then echo 'multi opt not allowed' ; exit 0; fi
@@ -359,25 +358,25 @@ while [ $1 ]; do
 			shift ; shift
 		fi
 		;;
-		-p)
+	-p)
 		trop_private && \
 		shift && \
 		transmission-remote $(uhc) -n "$AUTH" $(eval <<<"${1}" cat) || exit 1;
 		shift
 		;;
-		-V)
+	-V)
 		echo "$TROP_VERSION" && exit 0;
 		;;
-		-h)
+	-h)
 		usage && exit 0;
 		;;
-		-*)
+	-*)
 		echo ${0}: 'bad option `'${1}"'" && usage && exit 0;
 		;;
-		*)
+	*)
 		echo ${0}: unrecognized input && usage && exit 0;
 		;;
-	esac
+esac
 done
 
 exit 0;

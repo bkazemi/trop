@@ -72,8 +72,7 @@ trop_seed_info ()
 	trsl="$(trop_seed_list)" || exit 1
 	trsltmp="$(<<<"$trsl" cut -b2-4 | tr -d '[:blank:]')"
 
-	i=1
-	itmp=${i}
+	i=1 itmp=1
 
 	checki () { if [ "$itmp" = `expr $i - 1` ]; then return 0; else return 1; fi }
 	# XXX: needs work
@@ -188,8 +187,7 @@ trop_tracker_total ()
 {
 	# add tracker stuff
 	local ttt_t ttt_ta ttt_tt ttt_lst ttt_diff ttt_diffa ttt_diffl ttt_difftn ttt_diffu ttt_ltmp ttt_s
-	ttt_t="$1"
-	ttt_tt=1
+	ttt_t="$1" ttt_tt=1
 	if [ ! -e "${scrdir}/.cache/ttt_"$1"_lstp" ]; then
 		touch ${scrdir}/.cache/ttt_"$1"_lstp
 		ttt_lst="$(trop_torrent l| grep -v '^Sum'| grep -v '^ID')" && <<<"$ttt_lst" cat > "${scrdir}/.cache/ttt_"$1"_lstp" || exit 1
@@ -200,8 +198,7 @@ trop_tracker_total ()
 		ttt_diffl=<<<"$("$ttt_diff" cut -b 2 | cut -f1 -d ' '| tr -d '[:blank:]')" || exit 2
 	fi
 
-	ttt_i=1
-	ttt_tac=0;
+	ttt_i=1 ttt_tac=0
 
 	echo checking all torrent info...
 	if [ ! -e "$scrdir/.cache/ttt_"$1"_tap" ]; then # first permanent cache only should run once ever
@@ -301,8 +298,7 @@ res="$(<<<"$0" grep -qEx '.*\.sh$')" && \
 || \
 scrdir="$(<<<"$(ls -l $0)" sed -e 's/^.*-> //;s/\/\+[^\/]\+$//')"
 
-auser=0
-huser=${auser}
+auser=0 huser=0
 
 while [ $1 ]; do
 case $1 in
@@ -355,7 +351,7 @@ case $1 in
 			shift
 		else
 			trop_torrent $1 $2 || exit 1;
-			shift ; shift
+			shift 2
 		fi
 		;;
 	-p)

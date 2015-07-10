@@ -2,7 +2,6 @@
 #
 # TODO: implement mass location change
 #       real tracker checking
-#       keep things POSIX
 
 TROP_VERSION=\
 'trop 0.1.0
@@ -61,7 +60,7 @@ trop_private ()
 
 trop_num_seed ()
 {
-	wc -l <<<"$(trop_seed_list)" || exit 1
+	echo "$(trop_seed_list)" | wc -l || exit 1
 	exit 0;
 }
 
@@ -70,14 +69,14 @@ trop_seed_info ()
 	local trsl trsltmp i itmp
 
 	trsl="$(trop_seed_list)" || exit 1
-	trsltmp="$(<<<"$trsl" cut -b2-4 | tr -d '[:blank:]')"
+	trsltmp="$(echo "$trsl" | cut -b2-4 | tr -d '[:blank:]')"
 
 	i=1 itmp=1
 
 	checki () { if [ "$itmp" = `expr $i - 1` ]; then return 0; else return 1; fi }
 	# XXX: needs work
-	if [ "$trsltmp" = '' ]; then { echo trsl error ; exit 1 ;} fi ; while ((i <= $(<<<"$trsltmp" wc -l))); do
-	    trop_torrent $(<<<"$trsltmp" awk NR==$i) i && echo ----- && itmp=$i && ((i++)) && checki || i=1000 ; done \
+	if [ "$trsltmp" = '' ]; then { echo trsl error ; exit 1 ;} fi ; while [ $i -le $(echo "$trsltmp" | wc -l) ]; do
+	    trop_torrent $(echo "$trsltmp" | awk NR==$i) i && echo ----- && itmp=$i && i=$(($i + 1)) && checki || i=1000 ; done \
 	    ; if [ $i = 1000 ] && [ ! $? ]; then { echo trt error ; exit 1 ;}; fi ; exit 0
 
 	# trt error handling -
@@ -87,7 +86,7 @@ trop_seed_info ()
 
 trop_seed_list ()
 {
-	<<<"$(transmission-remote $(uhc) -n "$AUTH" -l)" awk '$9 == "Seeding" || $9 == "Up & Down"' || exit 1
+	echo "$(transmission-remote $(uhc) -n "$AUTH" -l)" | awk '$9 == "Seeding" || $9 == "Up & Down"' || exit 1
 }
 
 trop_seed_ulrate ()
@@ -98,27 +97,28 @@ trop_seed_ulrate ()
 	if [ -n "$1" ]; then
 		trop_seed_tracker_stats "$1"
 	else
-		a=$(<<<"$trsi" grep '^  Name' | cut -b3-)
-		b=$(<<<"$trsi" grep Upload\ Speed)
-		ll=`expr $(wc -L <<< "$a") + 1`
-		nl=$(wc -l <<< "$a")
+		a=$(echo "$trsi" | grep '^  Name' | cut -b3-)
+		b=$(echo "$trsi" | grep Upload\ Speed)
+		ll=$(($(echo "$a" | wc -L) + 1))
+		nl=$(echo "$a" | wc -l)
 	fi
 
-	for ((i=1; i <= nl; i++)); do
-		tmp=$(awk NR==$i <<< "$a" )
-		tmpn=$(wc -m <<< $tmp)
-		tmpo=`expr $tmpn % 2`
+	while [ $i -le $nl ]; do
+		tmp=$(echo "$a" | awk NR==$i)
+		tmpn=$(echo $tmp | wc -m)
+		tmpo=$(($tmpn % 2))
 		if [ ! $tmpo ]; then
-			while ((tmpn < ll)); do
-				tmp="$tmp  " && tmpn=tmpn+2;
+			while [ $tmpn -lt $ll ]; do
+				tmp="$tmp  " && tmpn=$(($tmpn + 2));
 			done;
 		else
-			while ((tmpn < ll)); do
-				tmp="$tmp " && ((tmp++))
+			while [ $tmpn < $ll ]; do
+				tmp="$tmp " && tmp=$(($tmp + 1))
 			done;
 		fi
-		#if [ tmp > "$ll" ]; then tmp="$(sed '$s/.$//' <<< "$tmp")"; fi
-		printf "%s\t%s\n" "$tmp" "$(awk NR==$i <<< "$b")"
+		#if [ tmp > "$ll" ]; then tmp="$(echo $tmp | sed '$s/.$//')"; fi
+		printf "%s\t%s\n" "$tmp" "$(echo "$b" | awk NR==$i)"
+		i=$(($i + 1))
 	done
 }
 
@@ -127,10 +127,10 @@ trop_seed_tracker_stats ()
 	exit 0; # add tracker stuff
 	local a b ll nl
 
-	a=$(<<<"$trsi" grep "$t" -B3 | grep Name | cut -b3-) || exit 1
-	b=$(<<<"$trsi" grep "$t" -A8 | grep '^  Upload Speed')
-	ll=`expr $(wc -L <<< "$a") + 1`
-	nl=$(wc -l <<< "$a")
+	a=$(echo "$trsi" | grep "$t" -B3 | grep Name | cut -b3-) || exit 1
+	b=$(echo "$trsi" | grep "$t" -A8 | grep '^  Upload Speed')
+	ll=$(($(echo "$a" | wc -L) + 1))
+	nl=$(echo "$a" | wc -l)
 }
 
 trop_seed_tracker ()
@@ -180,7 +180,7 @@ trop_tracker_get()
 		local tmp=${TROP_TRACKER:?'tracker file not found!'} && unset tmp
 	fi
 	if [ -z $TROP_TREQ ]; then
-		TROP_TREQ=$(grep -E "${1}\s*{tracker: " <<<"$TROP_TRACKER")
+		TROP_TREQ=$(echo "$TROP_TRACKER" | grep -E "${1}\s*{tracker: ")
 	fi
 }
 trop_tracker_total ()
@@ -190,12 +190,12 @@ trop_tracker_total ()
 	ttt_t="$1" ttt_tt=1
 	if [ ! -e "${scrdir}/.cache/ttt_"$1"_lstp" ]; then
 		touch ${scrdir}/.cache/ttt_"$1"_lstp
-		ttt_lst="$(trop_torrent l| grep -v '^Sum'| grep -v '^ID')" && <<<"$ttt_lst" cat > "${scrdir}/.cache/ttt_"$1"_lstp" || exit 1
+		ttt_lst="$(trop_torrent l| grep -v '^Sum'| grep -v '^ID')" && echo "$ttt_lst" > "${scrdir}/.cache/ttt_"$1"_lstp" || exit 1
 	else
-		ttt_lst="$(<<<"$(trop_torrent l) grep -v '^Sum'| grep -v '^ID'")" || exit 1
+		ttt_lst="$(echo "$(trop_torrent l) grep -v '^Sum'| grep -v '^ID'")" || exit 1
 	fi
-	if [ -n "$(ttt_diff="$(diff --unchanged-line-format='' - $scrdir/.cache/ttt_"$1"_lstp <<<"$ttt_lst")")" ]; then
-		ttt_diffl=<<<"$("$ttt_diff" cut -b 2 | cut -f1 -d ' '| tr -d '[:blank:]')" || exit 2
+	if [ -n "$(ttt_diff="$(echo "$ttt_lst" | diff --unchanged-line-format='' - $scrdir/.cache/ttt_"$1"_lstp)")" ]; then
+		ttt_diffl="$(echo "$ttt_diff" | cut -b 2 | cut -f1 -d ' '| tr -d '[:blank:]')" || exit 2
 	fi
 
 	ttt_i=1 ttt_tac=0
@@ -208,27 +208,29 @@ trop_tracker_total ()
 	fi
 
 	if [ -n "$ttt_diffl" ]; then
-		ttt_tta=`cat $scrdir/.cache/ttt_"$1"_tap`
-		ttt_difftn=$(<<<"diffl" wc -l)
-		for ((i=0;i < ttt_difftn;i++)); do
-			ttt_tta=`printf "%s\n%s" "$ttt_ta" "$(trop_torrent "`<<<"$ttt_diffl" awk NR==$i`" i)"`
+		ttt_tta=`cat ${scrdir}/.cache/ttt_"$1"_tap`
+		ttt_difftn=$(echo "$diffl" | wc -l)
+		local i=0
+		while [ $i -lt $ttt_difftn ]; do
+			#ttt_tta=`printf "%s\n%s" "$ttt_ta" "$(trop_torrent "`echo "$ttt_diffl" | awk NR==$i`" i)"`
+			i=$(($i + 1))
 		done
 		ttt_diffu=1
 	fi
 
 	echo grabbing tracker details...;echo
-	# a="$(<<<"$ttt_ta" grep "$ttt_t" -B 3 | grep Name | cut -b3-)"
-	# b="$(<<<"$ttt_ta" grep "$ttt_t" -A 8 | grep Name | cut -b3-)"
+	# a="$(echo "$ttt_ta" | grep "$ttt_t" -B 3 | grep Name | cut -b3-)"
+	# b="$(echo "$ttt_ta" | grep "$ttt_t" -A 8 | grep Name | cut -b3-)"
 
 	if [ "$ttt_diffu" = 1 ]; then
-		ttt_s="$(<<<"$ttt_ta" grep "$ttt_t" -A 14 | grep Downloaded -A 2 | cut -b 2-)"
+		ttt_s="$(echo "$ttt_ta" | grep "$ttt_t" -A 14 | grep Downloaded -A 2 | cut -b 2-)"
 	else
 		if [ -e "$scrdir/.cache/ttt_"$1"_ttotal" ]; then
 			printf "total downloaded: " ; cat "$scrdir/.cache/ttt_"$1"_ttotal" && exit 0 || exit 1
 		fi
-		ttt_s="$(<<<"$(cat $scrdir/.cache/ttt_"$1"_tap)" grep "$ttt_t" -A 14 | grep Downloaded -A 2 | cut -b 2-)"
+		ttt_s="$(echo "$(cat $scrdir/.cache/ttt_"$1"_tap)" grep "$ttt_t" -A 14 | grep Downloaded -A 2 | cut -b 2-)"
 	fi
-	local ttt_d="$(<<<"$ttt_s" grep Downloaded | tr -d '[:blank:]' | cut -b 12-)"
+	local ttt_d="$(echo "$ttt_s" | grep Downloaded | tr -d '[:blank:]' | cut -b 12-)"
 	local ttt_tdn=0
 
 	local ttt_np=`trop_make_file p`
@@ -236,25 +238,25 @@ trop_tracker_total ()
 	grep PATH /etc/profile > "$ttt_np" &
 
 	# total dl as seen by tracker (does not include freeleech downloads)
-	<<<"$ttt_d" cat > "$ttt_np" &
+	echo "$ttt_d" > "$ttt_np" &
 	while read -r l; do
-		if [ -n "$(<<<"$l" grep PATH)" ]; then continue; fi
+		if [ -n "$(echo "$l" | grep PATH)" ]; then continue; fi
 
 		if [ "$l" = 'None' ]; then
 			continue
-		elif [ -n "$(<<<"$l" grep GB)" ]; then
-			ttt_tdn=`<<<"scale=2; $ttt_tdn + $(<<<"$l" tr -d '[:alpha:]')" bc`
-		elif [ -n "$(<<<"$l" grep MB)" ]; then
-			ttt_ltmp=`<<<"$l" tr -d '[:alpha:]'`
-			ttt_tdn=`<<<"scale=2; $ttt_tdn + ( $ttt_ltmp / 1000 )" bc`
-		elif [ -n "$(<<<"$1" grep KB)" ]; then
-			ttt_ltmp=`<<<"$l" tr -d '[:alpha:]'`
-			ttt_tdn=`<<<"scale=2; $ttt_tdn + ( $ttt_ltmp / 1000000 )" bc`
+		elif [ -n "$(echo "$l" | grep GB)" ]; then
+			ttt_tdn=`echo "scale=2; $ttt_tdn + $(echo "$l" | tr -d '[:alpha:]')" | bc`
+		elif [ -n "$(echo "$l" | grep MB)" ]; then
+			ttt_ltmp=`echo "$l" | tr -d '[:alpha:]'`
+			ttt_tdn=`echo "scale=2; $ttt_tdn + ( $ttt_ltmp / 1000 )" | bc`
+		elif [ -n "$(echo "$1" | grep KB)" ]; then
+			ttt_ltmp=`echo "$l" | tr -d '[:alpha:]'`
+			ttt_tdn=`echo "scale=2; $ttt_tdn + ( $ttt_ltmp / 1000000 )" | bc`
 		fi
 	done < "$ttt_np" # use prefix in loop because env is exported to it
 
-	echo "total downloaded: $(<<<"$ttt_tdn" sed 's/0*$//') GB" && rm "$ttt_np" &&
-	printf "%s GB\n" "$(<<<"$ttt_tdn" cat)" > $scrdir/.cache/ttt_"$1"_ttotal && exit 0 || exit 1
+	echo "total downloaded: $(echo "$ttt_tdn" | sed 's/0*$//') GB" && rm "$ttt_np" &&
+	printf "%s GB\n" "$(echo "$ttt_tdn")" > $scrdir/.cache/ttt_"$1"_ttotal && exit 0 || exit 1
 }
 
 trop_torrent ()
@@ -270,9 +272,11 @@ trop_torrent ()
 
 args_look_ahead ()
 {
-	for ((i=2; i < $#; i++)); do
-		res="$(<<<"$i" grep '^-' -q)" && \
+	local i=2
+	while [ $i -lt $# ]; do
+		res="$(echo "$i" | grep '^-' -q)" && \
 		unset res && return 1;
+		i=$(($i + 1))
 	done;
 	unset res;
 	return 0;
@@ -280,23 +284,24 @@ args_look_ahead ()
 
 # ---------- main -------------
 
-noarg=${@:?"$(printf "\n%s" "$(usage)")"} && unset noarg
+: ${@:?"$(printf "%s" "$(usage)")"}
 hash transmission-remote 2>/dev/null || \
 { echo "can't find transmission-remote in PATH!" ; exit 1 ;}
 
 # check if file used to call the script is a link or the script file itself
-res="$(<<<"$0" grep -qEx '.*\.sh$')" && \
+# hard links will fail, so stick to sym links
+eval "echo ${0} | grep -qEx '.*\.sh$'" && \
 	{ \
-		{ res="$(<<<"$0" grep -qEx '^\./{1}')" && \
+		{ eval "echo ${0} | grep -qEx '^\./{1}'" && \
 	  	  scrdir="." ;} \
 		  || \
-		{ res="$(<<<"$0" grep -qEx '[^/]+')" && \
+		{ eval "echo ${0} | grep -qEx '[^/]+'" && \
 	  	  scrdir="." ;} \
 		  || \
-		scrdir="$(<<<"$0" sed 's/\/\+[^\/]\+$//')" \
+		scrdir="$(echo ${0} | sed 's/\/\+[^\/]\+$//')" \
 	;} \
 || \
-scrdir="$(<<<"$(ls -l $0)" sed -e 's/^.*-> //;s/\/\+[^\/]\+$//')"
+scrdir="$(echo "$(file -hb $0)" | sed -e "s/^symbolic link to //i;s/\/\+[^\/]\+$//")"
 
 auser=0 huser=0
 
@@ -357,7 +362,7 @@ case $1 in
 	-p)
 		trop_private && \
 		shift && \
-		transmission-remote $(uhc) -n "$AUTH" $(eval <<<"${1}" cat) || exit 1;
+		transmission-remote $(uhc) -n "$AUTH" $(eval "$(echo "${1}")") || exit 1;
 		shift
 		;;
 	-V)

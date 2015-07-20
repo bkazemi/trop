@@ -116,7 +116,7 @@ trop_seed_ulrate ()
 				tmp="$tmp " && tmp=$(($tmp + 1))
 			done;
 		fi
-		#if [ tmp > "$ll" ]; then tmp="$(echo $tmp | sed '$s/.$//')"; fi
+		#if [ tmp > "$ll" ]; then tmp="$(echo $tmp | sed -E '$s/.$//')"; fi
 		printf "%s\t%s\n" "$tmp" "$(echo "$b" | awk NR==$i)"
 		i=$(($i + 1))
 	done
@@ -255,7 +255,7 @@ trop_tracker_total ()
 		fi
 	done < "$ttt_np" # use prefix in loop because env is exported to it
 
-	echo "total downloaded: $(echo "$ttt_tdn" | sed 's/0*$//') GB" && rm "$ttt_np" &&
+	echo "total downloaded: $(echo "$ttt_tdn" | sed -E 's/0*$//') GB" && rm "$ttt_np" &&
 	printf "%s GB\n" "$(echo "$ttt_tdn")" > $scrdir/.cache/ttt_"$1"_ttotal && exit 0 || exit 1
 }
 
@@ -298,10 +298,10 @@ eval "echo ${0} | grep -qEx '.*\.sh$'" && \
 		{ eval "echo ${0} | grep -qEx '[^/]+'" && \
 	  	  scrdir="." ;} \
 		  || \
-		scrdir="$(echo ${0} | sed 's/\/\+[^\/]\+$//')" \
+		scrdir="$(echo ${0} | sed -E 's/\/+[^\/]+$//')" \
 	;} \
 || \
-scrdir="$(echo "$(file -hb $0)" | sed -e "s/^symbolic link to //i;s/\/\+[^\/]\+$//")"
+scrdir="$(echo "$(file -hb $0)" | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
 
 auser=0 huser=0
 

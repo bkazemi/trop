@@ -92,7 +92,7 @@ trop_seed_list ()
 trop_seed_ulrate ()
 {
 	trop_common || exit 1
-	local a b ll nl tmp tmpn tmpo
+	local i a b ll nl tmp tmpn tmpo
 
 	if [ -n "$1" ]; then
 		trop_seed_tracker_stats "$1"
@@ -103,23 +103,25 @@ trop_seed_ulrate ()
 		nl=$(echo "$a" | wc -l)
 	fi
 
+	i=0
 	while [ $i -le $nl ]; do
 		tmp=$(echo "$a" | awk NR==$i)
 		tmpn=$(echo $tmp | wc -m)
 		tmpo=$(($tmpn % 2))
 		if [ ! $tmpo ]; then
 			while [ $tmpn -lt $ll ]; do
-				tmp="$tmp  " && tmpn=$(($tmpn + 2));
+				tmp="$tmp  " ; tmpn=$(($tmpn + 2));
 			done;
 		else
-			while [ $tmpn < $ll ]; do
-				tmp="$tmp " && tmp=$(($tmp + 1))
+			while [ $tmpn -lt $ll ]; do
+				tmp="$tmp " ; tmpn=$(($tmpn + 1))
 			done;
 		fi
 		#if [ tmp > "$ll" ]; then tmp="$(echo $tmp | sed -E '$s/.$//')"; fi
 		printf "%s\t%s\n" "$tmp" "$(echo "$b" | awk NR==$i)"
 		i=$(($i + 1))
 	done
+	return 0;
 }
 
 trop_seed_tracker_stats ()

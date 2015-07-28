@@ -364,7 +364,7 @@ case $1 in
 	-p)
 		trop_private && \
 		shift && \
-		transmission-remote $(uhc) -n "$AUTH" $(eval "$(echo "${1}")") || exit 1;
+		transmission-remote $(uhc) -n "$AUTH" ${1} || exit 1;
 		shift
 		;;
 	-V)

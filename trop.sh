@@ -2,6 +2,7 @@
 #
 # TODO: implement mass location change
 #       real tracker checking
+#       condense to AWK
 
 TROP_VERSION=\
 'trop 0.1.1
@@ -28,7 +29,7 @@ options:
  -h                          show this output
 EOF
 
-	exit 0;
+	exit 0
 }
 
 uhc ()
@@ -39,7 +40,7 @@ uhc ()
 trop_common ()
 {
 	export trsi="$(trop_seed_info)" || return 1
-	return 0;
+	return 0
 }
 
 trop_private ()
@@ -121,7 +122,8 @@ trop_seed_ulrate ()
 		printf "%s\t%s\n" "$tmp" "$(echo "$b" | awk NR==$i)"
 		i=$(($i + 1))
 	done
-	return 0;
+
+	return 0
 }
 
 trop_seed_tracker_stats ()
@@ -163,16 +165,16 @@ trop_make_file ()
 			return 0 || return 1;
 		}
 	else
-		 _ 'trop_make_file(): file not recognized' && exit 1;
+		 _ 'trop_make_file(): file not recognized' && exit 1
 	fi
 	tmf_fname ()
 	{
 		while true; do
-			printf `mktemp -qu ${tmf_prefix}_trop.XXXXX` && return 0;
+			printf `mktemp -qu ${tmf_prefix}_trop.XXXXX` && return 0
 		done
 	}
 
-	printf "$(trop_make_file $1 m)" && return 0;
+	printf "$(trop_make_file $1 m)" && return 0
 }
 
 trop_tracker_get()
@@ -264,10 +266,10 @@ trop_tracker_total ()
 trop_torrent ()
 {
 	if [ -n "$1" ] && [ -z "$2" ]; then
-		transmission-remote $(uhc) -n "$AUTH" -$1 || { _ 'transmission-remote error' ; exit 1 ;} && exit 0;
+		transmission-remote $(uhc) -n "$AUTH" -$1 || { _ 'transmission-remote error' ; exit 1 ;} && exit 0
 	fi
 	if [ -z "$1" ]; then
-		usage && exit 0;
+		usage && exit 0
 	fi
 	transmission-remote $(uhc) -n "$AUTH" -t $1 -$2 || exit 1
 }
@@ -313,46 +315,56 @@ scrdir="$(echo "$(file -hb $0)" | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+
 
 auser=0 huser=0
 
+case $@ in
+	"-h"*)
+		usage && exit 0 ;;
+	"-V"*)
+		echo "$TROP_VERSION" && exit 0 ;;
+esac
+
 while [ $1 ]; do
 case $1 in
 	-a)
-		shift && \
-		trop_private "seta" "$1" && auser=1 && shift || { echo 'bad auth' && exit 1 ;}
+		shift
+		trop_private "seta" "$1" && auser=1 && shift && continue || { echo 'bad auth' && exit 1 ;}
 		;;
 	-b)
-		shift && \
-		trop_private "seth" "$1" && huser=1 && shift || { echo 'bad user/host' && exit 1 ;}
+		shift
+		trop_private "seth" "$1" && huser=1 && shift && continue || { echo 'bad user/host' && exit 1 ;}
 		;;
 	-ns)
-		shift;
+		shift
 		trop_private && \
-		trop_num_seed || exit 1;
+		trop_num_seed || exit 1
 		;;
 	-si)
 		shift
 		trop_private && \
-		trop_seed_info || exit 1;
+		trop_seed_info || exit 1
 		;;
 	-sul)
-		shift;
+		shift
 		trop_private && \
-		trop_seed_ulrate || exit 1;
+		trop_seed_ulrate || exit 1
+		;;
+	-s)
+		_ 'options include `-si` or `-sul`' && exit 0
 		;;
 	-ts)
 		trop_private && \
 		shift && \
-		trop_seed_tracker $1 || exit 1;
-		shift;
+		trop_seed_tracker $1 || exit 1
+		shift
 		;;
 	-tul)
 		trop_private && \
 		shift && \
-		trop_seed_ulrate $1 || exit 1;
+		trop_seed_ulrate $1 || exit 1
 		;;
 	-tt)
 		trop_private && \
 		shift && \
-		trop_tracker_total $1 || exit 1;
+		trop_tracker_total $1 || exit 1
 		shift
 		;;
 	-t)
@@ -360,32 +372,26 @@ case $1 in
 		shift && \
 		if [ -n "$4" ]; then _ 'multi opt not allowed' ; exit 0; fi
 		if [ "$1" = 'dl' ]; then
-			trop_torrent l | awk '$9 == "Downloading" || $9 == "Up & Down"' || exit 1;
+			trop_torrent l | awk '$9 == "Downloading" || $9 == "Up & Down"' || exit 1
 			shift
 		else
-			trop_torrent $1 $2 || exit 1;
+			trop_torrent $1 $2 || exit 1
 			shift 2
 		fi
 		;;
 	-p)
 		trop_private && \
 		shift && \
-		transmission-remote $(uhc) -n "$AUTH" ${1} || exit 1;
+		transmission-remote $(uhc) -n "$AUTH" ${1} || exit 1
 		shift
 		;;
-	-V)
-		echo "$TROP_VERSION" && exit 0;
-		;;
-	-h)
-		usage && exit 0;
-		;;
 	-*)
-		_ 'bad option `'${1}"'" && usage && exit 0;
+		_ 'bad option `'${1}"'" && usage && exit 0
 		;;
 	*)
-		_ 'unrecognized input' && usage && exit 0;
+		_ 'unrecognized input' && usage && exit 0
 		;;
 esac
 done
 
-exit 0;
+exit 0

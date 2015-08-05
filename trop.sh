@@ -4,7 +4,7 @@
 #       real tracker checking
 
 TROP_VERSION=\
-'trop 0.1.0
+'trop 0.1.1
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -12,7 +12,7 @@ usage ()
 	cat <<EOF
 trop.sh - transmission-remote text operations
 
-usage: `basename $0` [-b host:port] [-a auth] [options]
+usage: ${PROG_NAME} [-b host:port] [-a auth] [options]
 
 options:
  -b                          set host and port to connect to
@@ -75,9 +75,9 @@ trop_seed_info ()
 
 	checki () { if [ "$itmp" = `expr $i - 1` ]; then return 0; else return 1; fi }
 	# XXX: needs work
-	if [ "$trsltmp" = '' ]; then { echo trsl error ; exit 1 ;} fi ; while [ $i -le $(echo "$trsltmp" | wc -l) ]; do
+	if [ "$trsltmp" = '' ]; then { _ 'trsl error' ; exit 1 ;} fi ; while [ $i -le $(echo "$trsltmp" | wc -l) ]; do
 	    trop_torrent $(echo "$trsltmp" | awk NR==$i) i && echo ----- && itmp=$i && i=$(($i + 1)) && checki || i=1000 ; done \
-	    ; if [ $i = 1000 ] && [ ! $? ]; then { echo trt error ; exit 1 ;}; fi ; exit 0
+	    ; if [ $i = 1000 ] && [ ! $? ]; then { _ 'trt error' ; exit 1 ;}; fi ; exit 0
 
 	# trt error handling -
 	# if itmp is i-1 then trt was successful, so ret true
@@ -141,7 +141,7 @@ trop_seed_tracker ()
 
 	if [ "$1" = '' ] || [ "$2" != '' ]; then usage && exit 0; fi
 	# tracker checking...
-	echo tracker not found || { echo error ; exit 1 ;}
+	_ 'tracker not found' || { _ 'error' ; exit 1 ;}
 }
 
 trop_make_file ()
@@ -163,7 +163,7 @@ trop_make_file ()
 			return 0 || return 1;
 		}
 	else
-		 echo trop_make_file: file not recognized && exit 1;
+		 _ 'trop_make_file(): file not recognized' && exit 1;
 	fi
 	tmf_fname ()
 	{
@@ -264,7 +264,7 @@ trop_tracker_total ()
 trop_torrent ()
 {
 	if [ -n "$1" ] && [ -z "$2" ]; then
-		transmission-remote $(uhc) -n "$AUTH" -$1 || { echo "transmission-remote error" ; exit 1 ;} && exit 0;
+		transmission-remote $(uhc) -n "$AUTH" -$1 || { _ 'transmission-remote error' ; exit 1 ;} && exit 0;
 	fi
 	if [ -z "$1" ]; then
 		usage && exit 0;
@@ -284,11 +284,17 @@ args_look_ahead ()
 	return 0;
 }
 
-# ---------- main -------------
+_()
+{
+	echo ${PROG_NAME}":" "$@"
+}
 
+# ---------- main -------------
+unset _
+PROG_NAME=${0##*/}
 : ${@:?"$(printf "%s" "$(usage)")"}
 hash transmission-remote 2>/dev/null || \
-{ echo "can't find transmission-remote in PATH!" ; exit 1 ;}
+{ _ "can't find transmission-remote in PATH!" ; exit 1 ;}
 
 # check if file used to call the script is a link or the script file itself
 # hard links will fail, so stick to sym links
@@ -352,7 +358,7 @@ case $1 in
 	-t)
 		trop_private && \
 		shift && \
-		if [ -n "$4" ]; then echo 'multi opt not allowed' ; exit 0; fi
+		if [ -n "$4" ]; then _ 'multi opt not allowed' ; exit 0; fi
 		if [ "$1" = 'dl' ]; then
 			trop_torrent l | awk '$9 == "Downloading" || $9 == "Up & Down"' || exit 1;
 			shift
@@ -374,10 +380,10 @@ case $1 in
 		usage && exit 0;
 		;;
 	-*)
-		echo ${0}: 'bad option `'${1}"'" && usage && exit 0;
+		_ 'bad option `'${1}"'" && usage && exit 0;
 		;;
 	*)
-		echo ${0}: unrecognized input && usage && exit 0;
+		_ 'unrecognized input' && usage && exit 0;
 		;;
 esac
 done

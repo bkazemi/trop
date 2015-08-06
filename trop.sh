@@ -108,7 +108,7 @@ trop_seed_ulrate ()
 	while [ $i -le $nl ]; do
 		tmp=$(echo "$a" | awk NR==$i)
 		tmpn=$(echo $tmp | wc -m)
-		: $((tmpn %= 2))
+		tmpo=$((tmpn % 2))
 		if [ ! $tmpo ]; then
 			while [ $tmpn -lt $ll ]; do
 				tmp="$tmp  " ; : $((tmpn += 2));
@@ -293,9 +293,9 @@ args_look_ahead ()
 die ()
 {
 	if [ -n "$@" ]; then
-		_ "$@"
+		_ "$@" >&2
 	fi
-	kill -SIGINT $toppid
+	kill -9 $toppid
 }
 
 _ ()
@@ -338,7 +338,7 @@ for i; do
 		-h)
 			usage ;;
 		-V)
-			echo "$TROP_VERSION" ;;
+			echo "$TROP_VERSION" ; exit 0 ;;
 	esac
 done
 unset skip

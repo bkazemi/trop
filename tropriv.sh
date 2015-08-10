@@ -22,4 +22,4 @@ if [ "$1" = 'seta' ]; then
 	set_auth "$2"
 fi
 
-return 0;
+return 0

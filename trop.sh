@@ -87,7 +87,7 @@ trop_seed_info ()
 
 trop_seed_list ()
 {
-	echo "$(transmission-remote $(uhc) -n "$AUTH" -l)" | awk '$9 == "Seeding" || $9 == "Up & Down"' || die 'tsl() failed'
+	echo "$(transmission-remote $(uhc) -n "$AUTH" -l)" | awk '$9 == "Seeding"' || die 'tsl() failed'
 }
 
 trop_seed_ulrate ()
@@ -140,10 +140,7 @@ trop_seed_tracker_stats ()
 trop_seed_tracker ()
 {
 	trop_common
-
-	if [ "$1" = '' ] || [ "$2" != '' ]; then usage; fi
-	# tracker checking...
-	_ 'tracker not found' || die 'error'
+	echo "$(trop_seed_info)" | awk -f ${scrdir}/trop.awk func=tsi $1 ${TROP_TRACKER}
 }
 
 trop_make_file ()
@@ -179,17 +176,18 @@ trop_make_file ()
 
 trop_tracker_get()
 {
-	if [ -z $TROP_TRACKER ]; then
-		TROP_TRACKER="$(cat ${scrdir}/.cache/trackers)"
-		local tmp=${TROP_TRACKER:?'tracker file not found!'} && unset tmp
+	if [ ! -f $TROP_TRACKER ]; then
+		die 'tracker file not found!'
 	fi
-	if [ -z $TROP_TREQ ]; then
-		TROP_TREQ=$(echo "$TROP_TRACKER" | grep -E "${1}\s*{tracker: ")
+	if [ -z $1 ]; then
+		die 'no alias specified'
 	fi
+	awk -f ${scrdir}/trop.awk func=t ${1} ${TROP_TRACKER} || die 'trop.awk failed'
 }
 trop_tracker_total ()
 {
 	# add tracker stuff
+	trop_tracker_get $1
 	local ttt_t ttt_ta ttt_tt ttt_lst ttt_diff ttt_diffa ttt_diffl ttt_difftn ttt_diffu ttt_ltmp ttt_s
 	ttt_t="$1" ttt_tt=1
 	if [ ! -e "${scrdir}/.cache/ttt_"$1"_lstp" ]; then
@@ -327,6 +325,7 @@ eval "echo ${0} | grep -qEx '.*\.sh$'" && \
 || \
 scrdir="$(echo "$(file -hb $0)" | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
 
+TROP_TRACKER=${scrdir}/trackers
 auser=0 huser=0
 
 skip=0
@@ -401,7 +400,8 @@ case $1 in
 			shift
 		else
 			trop_torrent $1 $2
-			shift 2
+			# over-shifting produces garbage
+			test $2 && shift 2 || shift
 		fi
 		;;
 	-p)

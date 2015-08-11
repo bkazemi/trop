@@ -7,7 +7,7 @@
 BEGIN {
 	if (!length(ARGV[1])) exit
 	progname = ARGV[0]
-	pickedtm = 0
+	pickedtm = pickedsul = 0
 	for (i = 1; i < ARGC; i++) {
 		if (ARGV[i] ~ /^func=/) {
 			if (ARGV[i] ~ /tsi$/) {
@@ -16,9 +16,12 @@ BEGIN {
 					exit 1
 				delete ARGV[i] ; delete ARGV[i+1] ; delete ARGV[i+2]
 				i += 2
-			}
-			else
+			} else if (ARGV[i] ~ /sul$/) {
+				pickedsul = 1
+				delete ARGV[i]
+			} else {
 				err("invalid function")
+			}
 		} else if (ARGV[i] == "-") {
 			continue
 		} else {
@@ -75,7 +78,41 @@ function tracker_seed_info()
 	return 0
 }
 
+function seed_ulrate()
+{
+	idx = 0
+	do {
+		if (NR > 1) { 
+			if (length($0) > ll)
+				ll = length($0)
+		} else {
+			ll = length($0)
+		}
+		if ($0 ~ /^[[:space:]]*Name/) {
+			sularr[idx++] = $0
+			# at current, the UL line is
+			# ten lines below the Name line
+			for (i = 0; i < 10; i++)
+				getline
+			sularr[idx++] = $0
+		}
+	} while (getline)
+}
+
 {
 	if (pickedtsi)
 		tracker_seed_info()
+	if (pickedsul)
+		seed_ulrate()
+}
+
+END {
+	if (pickedsul) {
+		for (i = 0; i < idx; i += 2) {
+			ldiff = ll - length(sularr[i])
+			for (j = 0; j < ldiff; j++)
+				sularr[i] = sularr[i]" "
+			printf "%s %s\n", sularr[i], sularr[i+1]
+		}
+	}
 }

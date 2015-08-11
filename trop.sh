@@ -5,7 +5,7 @@
 #       condense to AWK
 
 TROP_VERSION=\
-'trop 0.1.1
+'trop 0.2.1
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -61,7 +61,7 @@ trop_private ()
 
 trop_num_seed ()
 {
-	echo "$(trop_seed_list)" | wc -l || die 'tns() error'
+	trop_seed_list | wc -l || die 'tns() error'
 	exit 0
 }
 
@@ -69,7 +69,7 @@ trop_seed_info ()
 {
 	local trsl trsltmp i itmp
 
-	trsl="$(trop_seed_list)" || exit 1
+	trsl="$(trop_seed_list)"
 	trsltmp="$(echo "$trsl" | cut -b2-4 | tr -d '[:blank:]')"
 
 	i=1 itmp=1
@@ -87,7 +87,7 @@ trop_seed_info ()
 
 trop_seed_list ()
 {
-	echo "$(transmission-remote $(uhc) -n "$AUTH" -l)" | awk '$9 == "Seeding"' || die 'tsl() failed'
+	transmission-remote $(uhc) -n "$AUTH" -l | awk '$9 == "Seeding"' || die 'tsl() failed'
 }
 
 trop_seed_ulrate ()
@@ -97,32 +97,8 @@ trop_seed_ulrate ()
 
 	if [ -n "$1" ]; then
 		trop_seed_tracker_stats "$1"
-	else
-		a=$(echo "$trsi" | grep '^  Name' | cut -b3-)
-		b=$(echo "$trsi" | grep Upload\ Speed)
-		ll=$(($(echo "$a" | wc -L) + 1))
-		nl=$(echo "$a" | wc -l)
 	fi
-
-	i=0
-	while [ $i -le $nl ]; do
-		tmp=$(echo "$a" | awk NR==$i)
-		tmpn=$(echo $tmp | wc -m)
-		tmpo=$((tmpn % 2))
-		if [ ! $tmpo ]; then
-			while [ $tmpn -lt $ll ]; do
-				tmp="$tmp  " ; : $((tmpn += 2));
-			done;
-		else
-			while [ $tmpn -lt $ll ]; do
-				tmp="$tmp " ; : $((tmpn += 1))
-			done;
-		fi
-		#if [ tmp > "$ll" ]; then tmp="$(echo $tmp | sed -E '$s/.$//')"; fi
-		printf "%s\t%s\n" "$tmp" "$(echo "$b" | awk NR==$i)"
-		: $((i += 1))
-	done
-
+	trop_seed_info | trop_awk 'sul'
 	return 0
 }
 
@@ -140,7 +116,7 @@ trop_seed_tracker_stats ()
 trop_seed_tracker ()
 {
 	trop_common
-	echo "$(trop_seed_info)" | awk -f ${scrdir}/trop.awk func=tsi $1 ${TROP_TRACKER}
+	trop_seed_info | trop_awk 'tsi' $1
 }
 
 trop_make_file ()
@@ -174,20 +150,26 @@ trop_make_file ()
 	printf "$(trop_make_file $1 m)" && return 0
 }
 
-trop_tracker_get()
+trop_awk ()
 {
-	if [ ! -f $TROP_TRACKER ]; then
-		die 'tracker file not found!'
+	if [ ! $(echo "$1" | grep -qEx '^t') ]; then
+		if [ ! -f $TROP_TRACKER ]; then
+			die 'tracker file not found!'
+		fi
+		if [ "$1" = 'tsi' ] && [ -z $2 ]; then
+			die 'no alias specified'
+		fi
+		awk -f ${scrdir}/trop.awk func=${1} ${2} ${TROP_TRACKER} || die 'trop.awk failed'
+		return 0
 	fi
-	if [ -z $1 ]; then
-		die 'no alias specified'
-	fi
-	awk -f ${scrdir}/trop.awk func=t ${1} ${TROP_TRACKER} || die 'trop.awk failed'
+	awk -f ${scrdir}/trop.awk func=${1} || die 'trop.awk failed'
+	return 0
 }
+
 trop_tracker_total ()
 {
 	# add tracker stuff
-	trop_tracker_get $1
+	#trop_tracker_get $1
 	local ttt_t ttt_ta ttt_tt ttt_lst ttt_diff ttt_diffa ttt_diffl ttt_difftn ttt_diffu ttt_ltmp ttt_s
 	ttt_t="$1" ttt_tt=1
 	if [ ! -e "${scrdir}/.cache/ttt_"$1"_lstp" ]; then
@@ -293,7 +275,7 @@ die ()
 	if [ -n "$@" ]; then
 		_ "$@" >&2
 	fi
-	kill -9 $toppid
+	kill -SIGABRT $toppid
 }
 
 _ ()

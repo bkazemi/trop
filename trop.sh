@@ -1,7 +1,6 @@
 #!/bin/sh
 #
 # TODO: implement mass location change
-#       real tracker checking
 #       condense to AWK
 
 TROP_VERSION=\
@@ -37,11 +36,11 @@ uhc ()
 	if [ -n "$USERHOST" ]; then printf "%s" "$USERHOST"; else printf ""; fi
 }
 
-trop_common ()
-{
-	export trsi="$(trop_seed_info)" || die 'trop_common() failed'
-	return 0
-}
+#trop_common ()
+#{
+#	export trsi="$(trop_seed_info)" || die 'trop_common() failed'
+#	return 0
+#}
 
 trop_private ()
 {
@@ -61,28 +60,18 @@ trop_private ()
 
 trop_num_seed ()
 {
-	trop_seed_list | wc -l || die 'tns() error'
+	trop_seed_list | wc -l | tr -d '[:blank:]' || die 'tns() error'
 	exit 0
 }
 
 trop_seed_info ()
 {
-	local trsl trsltmp i itmp
-
-	trsl="$(trop_seed_list)"
-	trsltmp="$(echo "$trsl" | cut -b2-4 | tr -d '[:blank:]')"
-
-	i=1 itmp=1
-
-	checki () { if [ "$itmp" = `expr $i - 1` ]; then return 0; else return 1; fi }
-	# XXX: needs work
-	if [ "$trsltmp" = '' ]; then { _ 'trsl error' ; exit 1 ;} fi ; while [ $i -le $(echo "$trsltmp" | wc -l) ]; do
-	    trop_torrent $(echo "$trsltmp" | awk NR==$i) i && echo ----- && itmp=$i && : $((i += 1)) && checki || i=1000 ; done \
-	    ; if [ $i = 1000 ] && [ ! $? ]; then die 'trt error'; fi ; exit 0
-
-	# trt error handling -
-	# if itmp is i-1 then trt was successful, so ret true
-	# else it wasn't return false
+	local trsl="$(trop_seed_list | awk '{if ($1 !~ /ID|Sum/) print $1}')"
+	echo "$trsl" | \
+	while read l; do
+		trop_torrent ${l} i
+		echo ----
+	done
 }
 
 trop_seed_list ()
@@ -92,31 +81,20 @@ trop_seed_list ()
 
 trop_seed_ulrate ()
 {
-	trop_common
-	local i a b ll nl tmp tmpn tmpo
-
-	if [ -n "$1" ]; then
-		trop_seed_tracker_stats "$1"
-	fi
 	trop_seed_info | trop_awk 'sul'
 	return 0
 }
 
-trop_seed_tracker_stats ()
+trop_seed_tracker_ul()
 {
-	exit 0; # add tracker stuff
-	local a b ll nl
-
-	a=$(echo "$trsi" | grep "$t" -B3 | grep Name | cut -b3-) || die
-	b=$(echo "$trsi" | grep "$t" -A8 | grep '^  Upload Speed')
-	ll=$(($(echo "$a" | wc -L) + 1))
-	nl=$(echo "$a" | wc -l)
+	trop_seed_info | trop_awk 'tsul' $1
+	return 0
 }
 
 trop_seed_tracker ()
 {
-	trop_common
 	trop_seed_info | trop_awk 'tsi' $1
+	return 0
 }
 
 trop_make_file ()
@@ -152,16 +130,16 @@ trop_make_file ()
 
 trop_awk ()
 {
-	if [ ! $(echo "$1" | grep -qEx '^t') ]; then
+	$(echo "$1" | grep -qE '^t') && {
 		if [ ! -f $TROP_TRACKER ]; then
 			die 'tracker file not found!'
 		fi
-		if [ "$1" = 'tsi' ] && [ -z $2 ]; then
+		if [ "$1" = 'tsi' ] || [ "$1" = 'tsul' ] && [ -z $2 ]; then
 			die 'no alias specified'
 		fi
 		awk -f ${scrdir}/trop.awk func=${1} ${2} ${TROP_TRACKER} || die 'trop.awk failed'
-		return 0
-	fi
+		return 0 \
+	;}
 	awk -f ${scrdir}/trop.awk func=${1} || die 'trop.awk failed'
 	return 0
 }
@@ -260,14 +238,7 @@ trop_torrent ()
 
 args_look_ahead ()
 {
-	local i=2
-	while [ $i -lt $# ]; do
-		res="$(echo "$i" | grep '^-' -q)" && \
-		unset res && return 1;
-		: $((i += 1))
-	done;
-	unset res;
-	return 0;
+	return 0
 }
 
 die ()
@@ -275,7 +246,7 @@ die ()
 	if [ -n "$@" ]; then
 		_ "$@" >&2
 	fi
-	kill -SIGABRT $toppid
+	kill -6 $toppid
 }
 
 _ ()
@@ -291,6 +262,8 @@ hash transmission-remote 2>/dev/null || \
 { _ "can't find transmission-remote in PATH!" ; exit 1 ;}
 LC_ALL=C
 toppid=$$
+# XXX errors still propagate..
+trap 'set -e ; exit 1' 6
 
 # check if file used to call the script is a link or the script file itself
 # hard links will fail, so stick to sym links
@@ -363,7 +336,8 @@ case $1 in
 	-tul)
 		trop_private
 		shift
-		trop_seed_ulrate $1
+		trop_seed_tracker_ul $1
+		shift
 		;;
 	-tt)
 		trop_private

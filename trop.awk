@@ -11,9 +11,15 @@ BEGIN {
 	for (i = 1; i < ARGC; i++) {
 		if (ARGV[i] ~ /^func=/) {
 			if (ARGV[i] ~ /tsi$/) {
-				pickedtsi = 1
 				if (tracker_match(ARGV[i+1], ARGV[i+2]))
 					exit 1
+				pickedtsi = 1
+				delete ARGV[i] ; delete ARGV[i+1] ; delete ARGV[i+2]
+				i += 2
+			} else if (ARGV[i] ~ /tsul$/) {
+				if (tracker_match(ARGV[i+1], ARGV[i+2]))
+					exit 1
+				pickedtsul = 1
 				delete ARGV[i] ; delete ARGV[i+1] ; delete ARGV[i+2]
 				i += 2
 			} else if (ARGV[i] ~ /sul$/) {
@@ -78,23 +84,48 @@ function tracker_seed_info()
 	return 0
 }
 
+function tracker_seedul()
+{
+	idx = ll = 0
+	do {
+		if ($0 ~ "^  Magnet.*&tr=.*"allt[0]".*") {
+			sub(/^[[:space:]]*/, "", name)
+			if (length(name) > ll)
+				ll = length(name)
+			if (!ul) {
+				while (getline) {
+					if ($0 ~ /^[[:space:]]*Upload Speed:/) {
+						ul = $0
+						break
+					}
+				}
+			}
+			if (!ul) exit 1
+			sub(/^[[:space:]]*/, "", ul)
+			tsularr[idx++] = name ; tsularr[idx++] = ul
+		} else if ($0 ~ /^[[:space:]]*Name:/) {
+			name = $0
+		} else if ($0 ~ /^[[:space:]]*Upload Speed:/) {
+			ul = $0
+		}
+	} while (getline)
+}
+
 function seed_ulrate()
 {
-	idx = 0
+	ll = idx = 0
 	do {
-		if (NR > 1) { 
-			if (length($0) > ll)
-				ll = length($0)
-		} else {
-			ll = length($0)
-		}
 		if ($0 ~ /^[[:space:]]*Name/) {
-			sularr[idx++] = $0
+			sularr[idx] = $0
+			sub(/^[[:space:]]*/, "", sularr[idx])
+			if (length(sularr[idx++]) > ll)
+					ll = length(sularr[idx-1])
 			# at current, the UL line is
 			# ten lines below the Name line
 			for (i = 0; i < 10; i++)
 				getline
-			sularr[idx++] = $0
+			sularr[idx] = $0
+			sub(/^[[:space:]]*/, "", sularr[idx++])
 		}
 	} while (getline)
 }
@@ -104,6 +135,8 @@ function seed_ulrate()
 		tracker_seed_info()
 	if (pickedsul)
 		seed_ulrate()
+	if (pickedtsul)
+		tracker_seedul()
 }
 
 END {
@@ -113,6 +146,14 @@ END {
 			for (j = 0; j < ldiff; j++)
 				sularr[i] = sularr[i]" "
 			printf "%s %s\n", sularr[i], sularr[i+1]
+		}
+	}
+	if (pickedtsul) {
+		for (i = 0; i < idx; i += 2) {
+			ldiff = ll - length(tsularr[i])
+			for (j = 0; j < ldiff; j++)
+				tsularr[i] = tsularr[i]" "
+			printf "%s %s\n", tsularr[i], tsularr[i+1]
 		}
 	}
 }

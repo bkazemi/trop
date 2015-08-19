@@ -2,12 +2,13 @@
 #
 # current options include:
 #   func=
-#     tsi - run tracker_seed_info function
-#
+#     tsi  - run tracker_seed_info function
+#     sul  - run seed_ulrate function
+#     tsul - run tracker_seedul function
 BEGIN {
 	if (!length(ARGV[1])) exit
 	progname = ARGV[0]
-	pickedtm = pickedsul = 0
+	pickedtsi = pickedsul = pickedtsul = pickedtt = 0
 	for (i = 1; i < ARGC; i++) {
 		if (ARGV[i] ~ /^func=/) {
 			if (ARGV[i] ~ /tsi$/) {
@@ -22,6 +23,14 @@ BEGIN {
 				pickedtsul = 1
 				delete ARGV[i] ; delete ARGV[i+1] ; delete ARGV[i+2]
 				i += 2
+			} else if (ARGV[i] ~ /tt$/) {
+				if (tracker_match(ARGV[i+1], ARGV[i+2]))
+					exit 1
+				pickedtt = 1
+				cachefile = ARGV[i+3]
+				delete ARGV[i]   ; delete ARGV[i+1]
+				delete ARGV[i+2] ; delete ARGV[i+3]
+				i += 3
 			} else if (ARGV[i] ~ /sul$/) {
 				pickedsul = 1
 				delete ARGV[i]
@@ -70,6 +79,7 @@ function tracker_match(alias, tfile)
 
 function tracker_seed_info()
 {
+	if (!$0) exit 1
 	do {
 		if ($0 ~ "^  Magnet.*&tr=.*"allt[0]".*")
 			printf "%s\n%s\n%s\n%s\n----\n", id, name, hash, $0
@@ -86,18 +96,17 @@ function tracker_seed_info()
 
 function tracker_seedul()
 {
-	idx = ll = 0
+	if (!$0) exit 1
+	ll = idx = 0
 	do {
 		if ($0 ~ "^  Magnet.*&tr=.*"allt[0]".*") {
 			sub(/^[[:space:]]*/, "", name)
 			if (length(name) > ll)
 				ll = length(name)
-			if (!ul) {
-				while (getline) {
-					if ($0 ~ /^[[:space:]]*Upload Speed:/) {
-						ul = $0
-						break
-					}
+			while (getline) {
+				if ($0 ~ /^[[:space:]]*Upload Speed:/) {
+					ul = $0
+					break
 				}
 			}
 			if (!ul) exit 1
@@ -105,21 +114,24 @@ function tracker_seedul()
 			tsularr[idx++] = name ; tsularr[idx++] = ul
 		} else if ($0 ~ /^[[:space:]]*Name:/) {
 			name = $0
-		} else if ($0 ~ /^[[:space:]]*Upload Speed:/) {
-			ul = $0
-		}
+		}# else if ($0 ~ /^[[:space:]]*Upload Speed:/) {
+		#	printf "...\n"
+		#	ul = $0
+		#}
 	} while (getline)
+	return 0
 }
 
 function seed_ulrate()
 {
+	if (!$0) exit 1
 	ll = idx = 0
 	do {
 		if ($0 ~ /^[[:space:]]*Name/) {
 			sularr[idx] = $0
 			sub(/^[[:space:]]*/, "", sularr[idx])
 			if (length(sularr[idx++]) > ll)
-					ll = length(sularr[idx-1])
+				ll = length(sularr[idx-1])
 			# at current, the UL line is
 			# ten lines below the Name line
 			for (i = 0; i < 10; i++)
@@ -128,6 +140,32 @@ function seed_ulrate()
 			sub(/^[[:space:]]*/, "", sularr[idx++])
 		}
 	} while (getline)
+	return 0
+}
+
+function tracker_total()
+{
+	if (!$0) exit 1
+	total = tmpnum = 0
+	do {
+		if ($0 ~ /None/) {
+			continue
+		} else if ($0 ~ /GB/) {
+			tmpnum = $0
+			sub(/GB/, "", tmpnum)
+			tdn += tmpnum
+		} else if ($0 ~ /MB/) {
+			tmpnum = $0
+			sub(/MB/, "", tmpnum)
+			tdn += (tmpnum / 1000)
+		} else if ($0 ~ /KB/) {
+			tmpnum = $0
+			sub(/KB/, "", tmpnum)
+			tdn += (tmpnum / 1000000)
+		}
+	} while (readline)
+
+	return 0
 }
 
 {
@@ -137,6 +175,8 @@ function seed_ulrate()
 		seed_ulrate()
 	if (pickedtsul)
 		tracker_seedul()
+	if (pickedtt)
+		tracker_total()
 }
 
 END {
@@ -155,5 +195,9 @@ END {
 				tsularr[i] = tsularr[i]" "
 			printf "%s %s\n", tsularr[i], tsularr[i+1]
 		}
+	}
+	if (pickedtt) {
+		print "total downloaded: " tdn " GB"
+		print tdn" GB" >cachefile
 	}
 }

@@ -2,35 +2,40 @@
 #
 # current options include:
 #   func=
+#     tm   - run tracker_match function
 #     tsi  - run tracker_seed_info function
 #     sul  - run seed_ulrate function
 #     tsul - run tracker_seedul function
 BEGIN {
 	if (!length(ARGV[1])) exit
 	progname = ARGV[0]
-	pickedtsi = pickedsul = pickedtsul = pickedtt = 0
+	tmerr = pickedtm = pickedtsi = pickedsul = pickedtsul = pickedtt = 0
 	for (i = 1; i < ARGC; i++) {
 		if (ARGV[i] ~ /^func=/) {
 			if (ARGV[i] ~ /tsi$/) {
-				if (tracker_match(ARGV[i+1], ARGV[i+2]))
-					exit 1
-				pickedtsi = 1
-				delete ARGV[i] ; delete ARGV[i+1] ; delete ARGV[i+2]
-				i += 2
+				tracker_match(ARGV[i+1], ARGV[i+2])
+				tmerr = pickedtsi = 1
+				delargs(i, i+=2)
 			} else if (ARGV[i] ~ /tsul$/) {
-				if (tracker_match(ARGV[i+1], ARGV[i+2]))
-					exit 1
-				pickedtsul = 1
-				delete ARGV[i] ; delete ARGV[i+1] ; delete ARGV[i+2]
-				i += 2
+				tracker_match(ARGV[i+1], ARGV[i+2])
+				tmerr = pickedtsul = 1
+				delargs(i, i+=2)
 			} else if (ARGV[i] ~ /tt$/) {
-				if (tracker_match(ARGV[i+1], ARGV[i+2]))
-					exit 1
-				pickedtt = 1
+				tracker_match(ARGV[i+1], ARGV[i+2])
+				tmerr = pickedtt = 1
 				cachefile = ARGV[i+3]
-				delete ARGV[i]   ; delete ARGV[i+1]
-				delete ARGV[i+2] ; delete ARGV[i+3]
-				i += 3
+				delargs(i, i+=3)
+			} else if (ARGV[i] ~ /tmo/) {
+				tracker_match(ARGV[i+1], ARGV[i+2])
+				tracker_match_other()
+				exit 2
+			} else if (ARGV[i] ~ /tm$/) {
+				tmerr = 1
+				exit(tracker_match(ARGV[i+1], ARGV[i+2]))
+			} else if (ARGV[i] ~ /ta$/) {
+				tracker_add(ARGV[i+1], ARGV[i+2], ARGV[i+3], ARGV[i+4])
+				delargs(i, i+=4)
+				exit 0
 			} else if (ARGV[i] ~ /sul$/) {
 				pickedsul = 1
 				delete ARGV[i]
@@ -43,6 +48,16 @@ BEGIN {
 			err("invalid option")
 		}
 	}
+}
+
+function delargs(s, e)
+{
+	if (e < s)
+		err("invalid arguments to delargs()")
+	while (s <= e)
+		delete ARGV[s++]
+
+	return
 }
 
 function err(msg)
@@ -61,7 +76,6 @@ function tracker_match(alias, tfile)
 			idx = 1
 			while (getline < tfile) {
 				if ($1 ~ /^\+$/) {
-					#print $2
 					allt[idx++] = $2"\n"
 					continue
 				} else if ($1 == ":") {
@@ -72,9 +86,61 @@ function tracker_match(alias, tfile)
 		}
 	}
 	
-	fflush(tfile)
 	close(tfile) 
-	return (!length(allt)) ? 1 : 0
+	return (!length(allt)) ? (tmerr ? err("tracker alias not found") : 1) : 0
+}
+
+function tracker_get_all(tfile)
+{
+	idx = 0
+	while ((getline < tfile) > 0) {
+		if ($1 == "+")
+			everyt[idx++] = $2
+		else if ($2 == ":")
+			everyt[idx++] = $3
+	}
+	return
+}
+
+function tracker_match_other(alias, tfile, stlst)
+{
+	if (!tracker_match(alias, tfile))
+		err("alias already defined")
+	tracker_get_all(tfile)
+	for (i in everyt) {
+		tmpt = tolower(everyt[i])
+		for (j in stlst) {
+			if (tmpt == tolower(stlst[j]))
+				err("tracker `" stlst[j] "' already defined")
+		}
+	}
+	
+	return 0
+}
+
+function tracker_add(alias, tfile, prim, sec)
+{
+	if (!alias || !prim || !sec)
+		err("You entered an empty string!")
+	split(sec, secarr)
+	for (i in secarr) {
+		if (secarr[i] == prim)
+			err("tracker `"prim"' entered more than once")
+		# I don't believe {} is portable...
+		if (sec ~ " *""("secarr[i]")"" *""("secarr[i]")"" *")
+			err("tracker `"secarr[i]"' entered more than once")
+	}
+	# since split idx starts at one, use 0 for
+	# primary tracker
+	secarr[0] = prim
+	tracker_match_other(alias, tfile, secarr)
+	delete secarr[0]
+	print alias" : "prim >> tfile
+	if (sec != "NULL")
+		for (i in secarr)
+			printf "\t+ "secarr[i]"\n" >> tfile
+
+	return 0
 }
 
 function tracker_seed_info()
@@ -114,11 +180,9 @@ function tracker_seedul()
 			tsularr[idx++] = name ; tsularr[idx++] = ul
 		} else if ($0 ~ /^[[:space:]]*Name:/) {
 			name = $0
-		}# else if ($0 ~ /^[[:space:]]*Upload Speed:/) {
-		#	printf "...\n"
-		#	ul = $0
-		#}
+		}
 	} while (getline)
+
 	return 0
 }
 
@@ -140,6 +204,7 @@ function seed_ulrate()
 			sub(/^[[:space:]]*/, "", sularr[idx++])
 		}
 	} while (getline)
+
 	return 0
 }
 

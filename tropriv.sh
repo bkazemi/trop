@@ -2,12 +2,10 @@
 
 # private vars for user info
 
-if [ "$huser" = 0 ]; then
+[ "$huser" = 0 ] && \
 	export USERHOST='' # set here for default
-fi
-if [ "$auser" = 0 ]; then
+[ "$auser" = 0 ] && \
 	export AUTH='' # set here for default
-fi
 
 set_uah ()
 { export USERHOST="$1" && return 0  || return 1 ;}
@@ -15,11 +13,7 @@ set_uah ()
 set_auth ()
 { export AUTH="$1" && return 0 || return 1 ;} 
 
-if [ "$1" = 'seth' ]; then
-	set_uah "$2"
-fi
-if [ "$1" = 'seta' ]; then
-	set_auth "$2"
-fi
+[ "$1" = 'seth' ] && set_uah "$2"
+[ "$1" = 'seta' ] && set_auth "$2"
 
 return 0

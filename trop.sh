@@ -33,7 +33,7 @@ EOF
 
 uhc ()
 {
-	if [ -n "$USERHOST" ]; then printf "%s" "$USERHOST"; else printf ""; fi
+	[ -n "$USERHOST" ] && printf "%s" "$USERHOST" || printf ""
 }
 
 trop_private ()
@@ -43,17 +43,14 @@ trop_private ()
 		transmission-remote $(uhc) -n "$AUTH" -st >&- 2<&- || die 3
 		return 0
 	fi
-	if [ "$auser" = 1 ] && [ "$huser" = 1 ]; then
-		return 0
-	fi 
+
+	[ "$auser" = 1 ] && [ "$huser" = 1 ] && return 0
 	. ${scrdir}/tropriv.sh
 
-	if [ "$1" = 'seth' ]; then
-		. ${scrdir}/tropriv.sh "$@" ; return 0
-	fi
-	if [ "$1" = 'seta' ]; then
-		. ${scrdir}/tropriv.sh "$@" ; return 0
-	fi
+	[ "$1" = 'seth' ] && \
+		. ${scrdir}/tropriv.sh "$@" && return 0
+	[ "$1" = 'seta' ] && \
+		. ${scrdir}/tropriv.sh "$@" && return 0
 
 	return 0
 }
@@ -100,7 +97,7 @@ trop_seed_tracker ()
 trop_make_file ()
 {
 	if [ "$1" = 'r' ]; then
-		if [ "$2" = 'm' ]; then printf "$(tmf_mkr)" && return 0 || return 1; fi
+		[ "$2" = 'm' ] && { printf "$(tmf_mkr)" && return 0 || return 1 ;}
 		tmf_prefix="regfile"
 		tmf_mkr ()
 		{
@@ -108,7 +105,7 @@ trop_make_file ()
 			return 0 || return 1
 		}
 	elif [ "$1" = 'p' ]; then
-		if [ "$2" = 'm' ]; then printf "%s" "$(tmf_mkp)" && return 0 || return 1; fi
+		[ "$2" = 'm' ] && { printf "%s" "$(tmf_mkp)" && return 0 || return 1 ;}
 		tmf_prefix="np"
 		tmf_mkp ()
 		{
@@ -131,14 +128,17 @@ trop_make_file ()
 trop_awk ()
 {
 	$(echo "$1" | grep -qE '^t') && {
-		if [ ! -f $TROP_TRACKER ]; then
-			return 4 # no tracker file
-		fi
+		[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
 		if [ "$1" = 'tsi' ] || [ "$1" = 'tsul' ] && [ -z $2 ]; then
 			return 41 # no alias
 		fi
 		if [ "$1" = 'tt' ]; then
 			awk -f ${scrdir}/trop.awk func=${1} ${2} ${TROP_TRACKER} ${3}\
+			|| return 31
+			return 0
+		fi
+		if [ "$1" = 'ta' ]; then
+			awk -f ${scrdir}/trop.awk func=${1} ${2} ${TROP_TRACKER} ${3} "${4}"\
 			|| return 31
 			return 0
 		fi
@@ -152,28 +152,25 @@ trop_awk ()
 
 trop_tracker_total ()
 {
-	if [ -z "$1" ]; then
-		die 41
-	fi
+	[ -z "$1" ] && die 41
+	# check if alias is defined
+	trop_awk 'tm' ${1} || die
 	local t ta tt lst diff diffa diffl difftn diffu ltmp s
 	t="$1" tt=1
-	lst="$(trop_torrent l | awk '{ if ($1 !~ /Sum|ID/) print $1 }')" || die
-	if [ ! -e "${scrdir}/.cache" ]; then
-		mkdir ${scrdir}/.cache
-	fi
-	if [ ! -e "${scrdir}/.cache/"$1"_lstp" ]; then
-		echo "$lst" > "${scrdir}/.cache/"${1}"_lstp" || die
-	else
-		diff="$(echo "$lst" | diff --unchanged-line-format='' - $scrdir/.cache/"$1"_lstp)"
-	fi
+	lst="$(trop_torrent l | awk '{ if ($1 !~ /Sum|ID/) print $1 }')" || die 24
+	[ ! -e "${scrdir}/.cache" ] && \
+		{ mkdir ${scrdir}/.cache || die 23 ;}
+	[ ! -e "${scrdir}/.cache/"$1"_lstp" ] && \
+		{ echo "$lst" > "${scrdir}/.cache/"${1}"_lstp" || die 23 ;} \
+	|| diff="$(echo "$lst" | diff --unchanged-line-format='' - $scrdir/.cache/"$1"_lstp)"
 
 	i=1 tac=0
-	echo checking all torrent info...
+	_ 'checking all torrent info...'
 	if [ ! -e "$scrdir/.cache/"$1"_tap" ]; then
 		# first permanent cache
-		echo 'caching all torrent info'
+		_ 'caching all torrent info'
 		ta="$(trop_torrent all i)"
-		echo "$ta" > $scrdir/.cache/"$1"_tap && tac=1 || die
+		echo "$ta" > $scrdir/.cache/"$1"_tap && tac=1 || die 23
 	fi
 
 	if [ -n "$diff" ]; then
@@ -187,7 +184,7 @@ trop_tracker_total ()
 		diffu=1
 	fi
 
-	echo -e "grabbing tracker details...\n"
+	_ "grabbing tracker details...\n"
 	if [ "$diffu" = 1 ]; then
 		s="$(echo "$ta" | grep "$t" -A 14 | grep Downloaded -A 2 | cut -b 2-)"
 	else
@@ -210,10 +207,46 @@ trop_torrent ()
 		transmission-remote $(uhc) -n "$AUTH" -$1 || die 1
 		return 0
 	fi
-	if [ -z "$1" ]; then
-		usage
-	fi
+	[ -z "$1" ] && usage
 	transmission-remote $(uhc) -n "$AUTH" -t $1 -$2 || die 1
+}
+
+trop_tracker_add()
+{
+	printf 'enter alias to use > '
+	read a 
+	printf 'enter primary tracker > '
+	read pt
+	printf 'add secondary tracker(s)? y/n > '
+	read ast
+	ast=$(echo $ast | tr '[:upper:]' '[:lower:]')
+	while [ "$ast" != 'y' ] && [ "$ast" != 'n' ] \
+          && [ "$ast" != 'yes' ] && [ "$ast" != 'no' ]; do
+		printf 'please answer yes or no > '
+		read ast
+		ast=$(echo $ast | tr '[:upper:]' '[:lower:]')
+	done
+	if [ "$ast" = 'yes' ] || [ "$ast" = 'y' ]; then
+		printf 'how many trackers would you like to add? > '
+		read numt
+		# non digits are simply stripped
+		numt=$(echo $numt | tr -Cd '[:digit:]')
+		while [ ! $numt ] || [ "$numt" -le 0 ]; do
+			printf "enter a valid number > "
+			read numt
+			numt=$(echo $numt | tr -Cd '[:digit:]')
+		done
+	fi
+	[ ! $numt ] && numt=0 st='NULL'
+	local i=1
+	while [ $i -le $numt ]; do
+		printf "enter tracker #%d > " "$i"
+		read tmp
+		[ "$st" ] && st="$st ""$tmp" ||\
+		st="$tmp"
+		: $((i += 1))
+	done
+	trop_awk 'ta' $a $pt "$st" || die
 }
 
 args_look_ahead ()
@@ -256,6 +289,13 @@ die ()
 			22)
 			_ 'pipe_check(): nothing on stdin,'\
 			  'probably nothing currently seeding'
+			break
+			;;
+			23)
+			_ 'trop_tracker_total(): caching error'
+			;;
+			24)
+			_ "trop_tracker_total(): failed getting torrent IDs"
 			break
 			;;
 ## FUNC ERR END $$
@@ -367,6 +407,10 @@ case $1 in
 	-s)
 		_ "options include \`-si' or \`-sul'" && exit 0
 		;;
+	-ta)
+		shift
+		trop_tracker_add
+		;;
 	-ts)
 		trop_private
 		shift
@@ -388,9 +432,7 @@ case $1 in
 	-t)
 		trop_private
 		shift
-		if [ -n "$4" ]; then 
-			die 5
-		fi
+		[ -n "$4" ] && die 5
 		if [ "$1" = 'dl' ]; then
 			trop_torrent l | awk '$9 == "Downloading" || $9 == "Up & Down"'
 			shift

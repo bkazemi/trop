@@ -129,24 +129,23 @@ trop_awk ()
 {
 	$(echo "$1" | grep -qE '^t') && {
 		[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
-		if [ "$1" = 'tsi' ] || [ "$1" = 'tsul' ] && [ -z $2 ]; then
-			return 41 # no alias
-		fi
+		[ -z $2 ] && return 41 # no alias
+		awk -f ${scrdir}/trop.awk -v progname="trop.awk" func=tm ${2} ${TROP_TRACKER} || return 42
 		if [ "$1" = 'tt' ]; then
-			awk -f ${scrdir}/trop.awk func=${1} ${2} ${TROP_TRACKER} ${3}\
+			awk -f ${scrdir}/trop.awk -v progname="trop.awk" func=${1} ${2} ${TROP_TRACKER} ${3}\
 			|| return 31
 			return 0
 		fi
 		if [ "$1" = 'ta' ]; then
-			awk -f ${scrdir}/trop.awk func=${1} ${2} ${TROP_TRACKER} ${3} "${4}"\
+			awk -f ${scrdir}/trop.awk -v progname="trop.awk" func=${1} ${2} ${TROP_TRACKER} ${3} "${4}"\
 			|| return 31
 			return 0
 		fi
-		awk -f ${scrdir}/trop.awk func=${1} ${2} ${TROP_TRACKER}\
+		awk -f ${scrdir}/trop.awk -v progname="trop.awk" func=${1} ${2} ${TROP_TRACKER}\
 		|| return 31 # awk failed
 		return 0 \
 	;}
-	awk -f ${scrdir}/trop.awk func=${1} || return 31 # awk failed
+	awk -f ${scrdir}/trop.awk -v progname="trop.awk" func=${1} || return 31 # awk failed
 	return 0
 }
 
@@ -162,22 +161,22 @@ trop_tracker_total ()
 		{ mkdir ${scrdir}/.cache || die 23 ;}
 	[ ! -e "${scrdir}/.cache/"$1"_lstp" ] && \
 		{ echo "$lst" > "${scrdir}/.cache/"${1}"_lstp" || die 23 ;} \
-	|| diff="$(echo "$lst" | diff --unchanged-line-format='' - $scrdir/.cache/"$1"_lstp)"
+	|| diff="$(echo "$lst" | diff --unchanged-line-format='' - ${scrdir}/.cache/"$1"_lstp)"
 
 	i=1 tac=0
 	_ 'checking all torrent info...'
-	if [ ! -e "$scrdir/.cache/"$1"_tap" ]; then
+	if [ ! -e "${scrdir}/.cache/"$1"_tap" ]; then
 		# first permanent cache
 		_ 'caching all torrent info'
 		ta="$(trop_torrent all i)"
-		echo "$ta" > $scrdir/.cache/"$1"_tap && tac=1 || die 23
+		echo "$ta" > ${scrdir}/.cache/"$1"_tap && tac=1 || die 23
 	fi
 
 	if [ -n "$diff" ]; then
 		tta=`cat ${scrdir}/.cache/"$1"_tap`
 		difftn=$(echo "$diff" | wc -l)
-		local i=0
-		while [ $i -lt $difftn ]; do
+		local i=1
+		while [ $i -le $difftn ]; do
 			tta=`printf "%s\n%s" "$ta" "$(trop_torrent $(echo "$diff" | awk NR==$i) i)"`
 			: $((i += 1))
 		done
@@ -315,6 +314,9 @@ die ()
 			_ 'no alias specified'
 			break
 			;;
+			42)
+			_ 'alias not found'
+			;;
 ## TRACKER ERR END $$
 			5)
 			_ 'multiple options not currently allowed'
@@ -434,7 +436,7 @@ case $1 in
 		shift
 		[ -n "$4" ] && die 5
 		if [ "$1" = 'dl' ]; then
-			trop_torrent l | awk '$9 == "Downloading" || $9 == "Up & Down"'
+			trop_torrent all i | trop_awk 'dli' || die 31
 			shift
 		else
 			trop_torrent $1 $2

@@ -1,5 +1,3 @@
-#!/bin/env awk -f
-#
 # current options include:
 #   func=
 #     tm   - run tracker_match function
@@ -8,29 +6,28 @@
 #     tsul - run tracker_seedul function
 BEGIN {
 	if (!length(ARGV[1])) exit
-	progname = ARGV[0]
+	if (!progname) progname = "trop.awk"
 	tmerr = pickedtm = pickedtsi = pickedsul = pickedtsul = pickedtt = 0
 	for (i = 1; i < ARGC; i++) {
 		if (ARGV[i] ~ /^func=/) {
 			if (ARGV[i] ~ /tsi$/) {
-				tracker_match(ARGV[i+1], ARGV[i+2])
 				tmerr = pickedtsi = 1
+				tracker_match(ARGV[i+1], ARGV[i+2])
 				delargs(i, i+=2)
 			} else if (ARGV[i] ~ /tsul$/) {
-				tracker_match(ARGV[i+1], ARGV[i+2])
 				tmerr = pickedtsul = 1
+				tracker_match(ARGV[i+1], ARGV[i+2])
 				delargs(i, i+=2)
 			} else if (ARGV[i] ~ /tt$/) {
-				tracker_match(ARGV[i+1], ARGV[i+2])
 				tmerr = pickedtt = 1
+				tracker_match(ARGV[i+1], ARGV[i+2])
 				cachefile = ARGV[i+3]
 				delargs(i, i+=3)
-			} else if (ARGV[i] ~ /tmo/) {
-				tracker_match(ARGV[i+1], ARGV[i+2])
-				tracker_match_other()
-				exit 2
+			} else if (ARGV[i] ~ /tmo$/) {
+				tracker_match_other(ARGV[i+1], ARGV[i+2])
+				delargs(i, i+=2)
 			} else if (ARGV[i] ~ /tm$/) {
-				tmerr = 1
+				#tmerr = 1
 				exit(tracker_match(ARGV[i+1], ARGV[i+2]))
 			} else if (ARGV[i] ~ /ta$/) {
 				tracker_add(ARGV[i+1], ARGV[i+2], ARGV[i+3], ARGV[i+4])
@@ -39,13 +36,16 @@ BEGIN {
 			} else if (ARGV[i] ~ /sul$/) {
 				pickedsul = 1
 				delete ARGV[i]
+			} else if (ARGV[i] ~ /dli$/) {
+				tmerr = pickeddli = 1
+				delete ARGV[i]
 			} else {
 				err("invalid function")
 			}
 		} else if (ARGV[i] == "-") {
 			continue
 		} else {
-			err("invalid option")
+			err("invalid option `"ARGV[i]"'")
 		}
 	}
 }
@@ -71,7 +71,7 @@ function tracker_match(alias, tfile)
 	if (!alias)
 		err("no alias specified")
 	while ((getline < tfile) > 0) {
-		if ($1 ~ "^"alias"$" && $2 == ":") {
+		if ($1 == alias && $2 == ":") {
 			allt[0] = $3
 			idx = 1
 			while (getline < tfile) {
@@ -228,9 +228,32 @@ function tracker_total()
 			sub(/KB/, "", tmpnum)
 			tdn += (tmpnum / 1000000)
 		}
-	} while (readline)
+	} while (getline)
 
 	return 0
+}
+
+function dl_info()
+{
+	FS="  +"
+	if (!$0) exit 1
+	do {
+		if ($2 ~ /^State: (Download)|(Up & Down)/) {
+			print name
+			print $0
+			while (getline) {
+				if ($2 ~ /^(Percent Done:)|(ETA:)|(Download Speed:)|(Upload Speed:)|(Peers:)/)
+					# leave leading spaces to make info clearer
+					print $0
+				else if ($1 ~ /^HISTORY/) {
+					print "----"
+					break
+				}
+			}
+		} else if ($2 ~ /^Name:/) {
+			name = $2
+		}
+	} while (getline)
 }
 
 {
@@ -242,6 +265,8 @@ function tracker_total()
 		tracker_seedul()
 	if (pickedtt)
 		tracker_total()
+	if (pickeddli)
+		dl_info()
 }
 
 END {

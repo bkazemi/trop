@@ -4,6 +4,9 @@
 #     tsi  - run tracker_seed_info function
 #     sul  - run seed_ulrate function
 #     tsul - run tracker_seedul function
+#     tt   - run tracker_total function
+#     ta   - run tracker_add function
+#     dli  - run dl_info function
 BEGIN {
 	if (!length(ARGV[1])) exit
 	if (!progname) progname = "trop.awk"
@@ -27,7 +30,6 @@ BEGIN {
 				tracker_match_other(ARGV[i+1], ARGV[i+2])
 				delargs(i, i+=2)
 			} else if (ARGV[i] ~ /tm$/) {
-				#tmerr = 1
 				exit(tracker_match(ARGV[i+1], ARGV[i+2]))
 			} else if (ARGV[i] ~ /ta$/) {
 				tracker_add(ARGV[i+1], ARGV[i+2], ARGV[i+3], ARGV[i+4])
@@ -62,7 +64,8 @@ function delargs(s, e)
 
 function err(msg)
 {
-	printf progname": " msg"\n" > "/dev/stderr"
+	if (!silent)
+		printf progname": " msg"\n" > "/dev/stderr"
 	exit 1
 }
 
@@ -76,7 +79,7 @@ function tracker_match(alias, tfile)
 			idx = 1
 			while (getline < tfile) {
 				if ($1 ~ /^\+$/) {
-					allt[idx++] = $2"\n"
+					allt[idx++] = $2
 					continue
 				} else if ($1 == ":") {
 					err("first tracker already defined for alias `"alias"'")
@@ -147,9 +150,10 @@ function tracker_seed_info()
 {
 	if (!$0) exit 1
 	do {
-		if ($0 ~ "^  Magnet.*&tr=.*"allt[0]".*")
-			printf "%s\n%s\n%s\n%s\n----\n", id, name, hash, $0
-		else if ($0 ~ /^[[:space:]]*Id:/)
+		for (i in allt)
+			if ($0 ~ "^  Magnet.*&tr=.*"allt[i]".*")
+				printf "%s\n%s\n%s\n%s\n----\n", id, name, hash, $0
+		if ($0 ~ /^[[:space:]]*Id:/)
 			id = $0
 		else if ($0 ~ /^[[:space:]]*Name:/)
 			name = $0
@@ -165,22 +169,24 @@ function tracker_seedul()
 	if (!$0) exit 1
 	ll = idx = 0
 	do {
-		if ($0 ~ "^  Magnet.*&tr=.*"allt[0]".*") {
-			sub(/^[[:space:]]*/, "", name)
-			if (length(name) > ll)
-				ll = length(name)
-			while (getline) {
-				if ($0 ~ /^[[:space:]]*Upload Speed:/) {
-					ul = $0
-					break
+		for (i in allt) {
+			if ($0 ~ "^  Magnet.*&tr=.*"allt[i]".*") {
+				sub(/^[[:space:]]*/, "", name)
+				if (length(name) > ll)
+					ll = length(name)
+				while (getline) {
+					if ($0 ~ /^[[:space:]]*Upload Speed:/) {
+						ul = $0
+						break
+					}
 				}
-			}
-			if (!ul) exit 1
-			sub(/^[[:space:]]*/, "", ul)
-			tsularr[idx++] = name ; tsularr[idx++] = ul
-		} else if ($0 ~ /^[[:space:]]*Name:/) {
-			name = $0
+				if (!ul) exit 1
+				sub(/^[[:space:]]*/, "", ul)
+				tsularr[idx++] = name ; tsularr[idx++] = ul
+			} 
 		}
+		if ($0 ~ /^[[:space:]]*Name:/)
+			name = $0
 	} while (getline)
 
 	return 0
@@ -240,6 +246,7 @@ function dl_info()
 	do {
 		if ($2 ~ /^State: (Download)|(Up & Down)/) {
 			print name
+			print id
 			print $0
 			while (getline) {
 				if ($2 ~ /^(Percent Done:)|(ETA:)|(Download Speed:)|(Upload Speed:)|(Peers:)/)
@@ -250,6 +257,8 @@ function dl_info()
 					break
 				}
 			}
+		} else if ($2 ~ /^Id:/) {
+			id = $0
 		} else if ($2 ~ /^Name:/) {
 			name = $2
 		}
@@ -287,7 +296,8 @@ END {
 		}
 	}
 	if (pickedtt) {
-		print "total downloaded: " tdn " GB"
+		if (!tdn) exit 1
+		print "Total downloaded: " tdn " GB"
 		print tdn" GB" >cachefile
 	}
 }

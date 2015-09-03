@@ -1,16 +1,15 @@
 #!/bin/sh
 #
 # TODO: implement mass location change
-#       condense to AWK
 
 TROP_VERSION=\
-'trop 0.2.2
+'trop 0.3.2
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
 {
 	cat <<EOF >&2
-trop.sh - transmission-remote text operations
+trop.sh - transmission-remote operations
 
 usage: ${PROG_NAME} [-b host:port] [-a auth] [options]
 
@@ -18,12 +17,16 @@ options:
  -b                       set host and port to connect to
  -a                       set authorization information
  -p                       pass flags directly to tr-remote
+ -dl                      show information about downloading torrents
  -ns                      list number of torrents actively seeding
- -si                      list information about active torrents
- -sul                     list active torrents and their upload rates
- -tul <tracker-alias>     list active torrents and their upload rates by tracker
- -ts  <tracker-alias>     list active torrents by tracker
+ -si                      show information about seeding torrents
+ -sul                     list seeding torrents and their upload rates
+ -ta                      add a tracker alias interactively
+ -tul <tracker-alias>     list seeding torrents and their UL rates by tracker
+ -tt  <tracker-alias>     show total amount downloaded from tracker
+ -ts  <tracker-alias>     list seeding torrents by tracker
  -t   <torrent-id> <opts> pass tr-remote option to torrent
+ -q                       suppress all output
  -V                       show version information
  -h                       show this output
 EOF
@@ -34,6 +37,12 @@ EOF
 uhc ()
 {
 	[ -n "$USERHOST" ] && printf "%s" "$USERHOST" || printf ""
+}
+
+echo_wrap ()
+{
+	# in case echo is used to display anything to user
+	[ $silent -eq 0 ] && echo "$@"
 }
 
 trop_private ()
@@ -57,7 +66,7 @@ trop_private ()
 
 trop_seed_list ()
 {
-	transmission-remote $(uhc) -n "$AUTH" -l 2>/dev/null | awk '$9 == "Seeding"' || die 1
+	transmission-remote $(uhc) -n "$AUTH" -l 2>/dev/null | awk '$9 == "Seeding"' || die 32
 }
 
 trop_num_seed ()
@@ -130,22 +139,23 @@ trop_awk ()
 	$(echo "$1" | grep -qE '^t') && {
 		[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
 		[ -z $2 ] && return 41 # no alias
-		awk -f ${scrdir}/trop.awk -v progname="trop.awk" func=tm ${2} ${TROP_TRACKER} || return 42
+		[ "$1" != 'ta' ] && \
+		{ awk -f ${scrdir}/trop.awk -v "silent=${silent} progname=\"trop.awk\"" func=tm ${2} ${TROP_TRACKER} || return 42 ;}
 		if [ "$1" = 'tt' ]; then
-			awk -f ${scrdir}/trop.awk -v progname="trop.awk" func=${1} ${2} ${TROP_TRACKER} ${3}\
+			awk -f ${scrdir}/trop.awk -v "silent=${silent} progname=\"trop.awk\"" func=${1} ${2} ${TROP_TRACKER} ${3}\
 			|| return 31
 			return 0
 		fi
 		if [ "$1" = 'ta' ]; then
-			awk -f ${scrdir}/trop.awk -v progname="trop.awk" func=${1} ${2} ${TROP_TRACKER} ${3} "${4}"\
+			awk -f ${scrdir}/trop.awk -v "silent=${silent} progname=\"trop.awk\"" func=${1} ${2} ${TROP_TRACKER} ${3} "${4}"\
 			|| return 31
 			return 0
 		fi
-		awk -f ${scrdir}/trop.awk -v progname="trop.awk" func=${1} ${2} ${TROP_TRACKER}\
+		awk -f ${scrdir}/trop.awk -v "silent=${silent} progname=\"trop.awk\"" func=${1} ${2} ${TROP_TRACKER}\
 		|| return 31 # awk failed
 		return 0 \
 	;}
-	awk -f ${scrdir}/trop.awk -v progname="trop.awk" func=${1} || return 31 # awk failed
+	awk -f ${scrdir}/trop.awk -v "silent=${silent} progname=\"trop.awk\"" func=${1} || return 31 # awk failed
 	return 0
 }
 
@@ -153,7 +163,7 @@ trop_tracker_total ()
 {
 	[ -z "$1" ] && die 41
 	# check if alias is defined
-	trop_awk 'tm' ${1} || die
+	trop_awk 'tm' ${1} || die 42
 	local t ta tt lst diff diffa diffl difftn diffu ltmp s
 	t="$1" tt=1
 	lst="$(trop_torrent l | awk '{ if ($1 !~ /Sum|ID/) print $1 }')" || die 24
@@ -193,10 +203,10 @@ trop_tracker_total ()
 		fi
 		s="$(echo "$(cat $scrdir/.cache/"$1"_tap)" | grep "$t" -A 14 | grep Downloaded -A 2 | cut -b 2-)"
 	fi
-	local d="$(echo "$s" | awk\
+	local d="$(echo "$s" | awk \
 	          '{ if ($1 ~ /Downloaded/) print $2 $3 }')"
-
 	echo "$d" | trop_awk 'tt' $1 ${scrdir}/.cache/${1}_ttotal || die $?
+
 	return 0
 }
 
@@ -245,7 +255,7 @@ trop_tracker_add()
 		st="$tmp"
 		: $((i += 1))
 	done
-	trop_awk 'ta' $a $pt "$st" || die
+	trop_awk 'ta' $a $pt "$st" || die $?
 }
 
 args_look_ahead ()
@@ -268,7 +278,7 @@ pipe_check ()
 
 die ()
 {
-	if [ -n "$1" ]; then
+	[ -n "$1" ] && [ $silent -eq 0 ] && \
 		case ${1} in
 			1)
 			_ "\ntransmission-remote error\n"\
@@ -305,6 +315,9 @@ die ()
 			_ 'trop.awk failed'
 			break
 			;;
+			32)
+			_ 'awk failed'
+			;;
 ## TRACKER ERROR ##
 			4)
 			_ 'tracker file not found!'
@@ -326,7 +339,6 @@ die ()
 			_ 'error'
 			;;
 		esac
-	fi
 	kill -6 $toppid
 }
 
@@ -334,6 +346,7 @@ _ ()
 {
 	# XXX figure out what to do about
 	# double err output
+	[ $silent -eq 0 ] && \
 	echo -e ${PROG_NAME}":" "$@"
 }
 
@@ -345,11 +358,12 @@ hash transmission-remote 2>/dev/null || \
 { _ "can't find transmission-remote in PATH!" ; exit 1 ;}
 LC_ALL=C
 toppid=$$
+silent=0
 trap 'set -e ; exit 1' 6
 
 # check if file used to call the script is a link or the script file itself
 # hard links will fail, so stick to sym links
-eval "echo ${0} | grep -qEx '.*\.sh$'" && \
+file -hb $0 | grep -q '^POSIX shell' && \
 	{ \
 		{ eval "echo ${0} | grep -qEx '^\./{1}'" && \
 	  	  scrdir="." ;} \
@@ -367,12 +381,14 @@ auser=0 huser=0
 
 skip=0
 for i; do
-	if [ $skip -eq 1 ]; then skip=0 ; continue; fi
+	[ $skip -eq 1 ] && { skip=0 ; continue ;}
 	case $i in
 		-p) 
 			skip=1 ; continue ;;
 		-h)
 			usage ;;
+		-q)
+			silent=1 ;;
 		-V)
 			echo "$TROP_VERSION" ; exit 0 ;;
 	esac
@@ -389,6 +405,11 @@ case $1 in
 	-b)
 		shift
 		trop_private "seth" "$1" ; huser=1
+		shift
+		;;
+	-dl)
+		trop_private	
+		trop_torrent all i | trop_awk 'dli' || die 31
 		shift
 		;;
 	-ns)
@@ -435,20 +456,18 @@ case $1 in
 		trop_private
 		shift
 		[ -n "$4" ] && die 5
-		if [ "$1" = 'dl' ]; then
-			trop_torrent all i | trop_awk 'dli' || die 31
-			shift
-		else
-			trop_torrent $1 $2
-			# over-shifting produces garbage
-			test $2 && shift 2 || shift
-		fi
+		trop_torrent $1 $2
+		# over-shifting produces garbage
+		test $2 && shift 2 || shift
 		;;
 	-p)
 		trop_private
 		shift
 		transmission-remote $(uhc) -n "$AUTH" ${1} || die 1
 		shift
+		;;
+	-q) 
+		shift 
 		;;
 	-*)
 		_ 'bad option `'${1}"'" && usage

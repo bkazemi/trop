@@ -1,0 +1,18 @@
+#compdef trop
+
+_arguments : \
+	"-b[set host and port to connect to]" \
+	"-a[set authorization information]" \
+	"-p[pass flags directly to tr-remote]" \
+	"-dl[show information about downloading torrents]" \
+	"-ns[list number of torrents actively seeding]" \
+	"-si[show information about seeding torrents]" \
+	"-sul[list seeding torrents and their upload rates]" \
+	"-ta[add a tracker alias interactively]" \
+	"-tul[list seeding torrents and their UL rates by tracker]" \
+	"-tt[show total amount downloaded from tracker]" \
+	"-ts[list seeding torrents by tracker]" \
+	"-t[pass tr-remote option to torrent]" \
+	"-q[suppress all message output]" \
+	"-V[show version information]" \
+	"-h[show help]"

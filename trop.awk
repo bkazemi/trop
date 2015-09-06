@@ -1,10 +1,13 @@
 # current options include:
 #   func=
 #     tm   - run tracker_match function
+#     tmo  - run tracker_match_other function
 #     tsi  - run tracker_seed_info function
 #     sul  - run seed_ulrate function
 #     tsul - run tracker_seedul function
 #     tt   - run tracker_total function
+#     ttd  - run tracker_total_details function
+#     tth  - run tracker_total_hashop function
 #     ta   - run tracker_add function
 #     dli  - run dl_info function
 BEGIN {
@@ -26,6 +29,18 @@ BEGIN {
 				tracker_match(ARGV[i+1], ARGV[i+2])
 				cachefile = ARGV[i+3]
 				delargs(i, i+=3)
+			} else if (ARGV[i] ~ /ttd$/) {
+				tmerr = pickedttd = 1
+				tracker_match(ARGV[i+1], ARGV[i+2])
+				delargs(i, i+=2)
+			} else if (ARGV[i] ~ /tth$/) {
+				pickedtth = 1
+				c = 0
+				if ((op = ARGV[i+1]) == "check") {
+					c = 1
+					hash = ARGV[i+2]
+				}
+				delargs(i, i+=(c ? 2 : 1))
 			} else if (ARGV[i] ~ /tmo$/) {
 				tracker_match_other(ARGV[i+1], ARGV[i+2])
 				delargs(i, i+=2)
@@ -239,6 +254,45 @@ function tracker_total()
 	return 0
 }
 
+function tracker_total_hashop()
+{
+	if (op == "check") {
+		do {
+			if ($1 ~ /^Hash:/)
+				if ($2 == hash)
+					exit 1
+		} while (getline)
+		return 0
+	} else if (op == "add") {
+		do {
+			if ($1 ~ /^Hash:/)
+				print $2
+		} while (getline)	
+	}
+
+	return 0
+}
+
+function tracker_total_details()
+{
+	if (!$0) exit 1
+	FS="  +"
+	do {
+		if ($2 ~ /^Magnet:/)
+			for (i in allt)
+				if ($2 ~ ".*&tr=.*"allt[i]".*")
+					while (getline)
+						if ($2 ~ /^Downloaded:/) {
+							print $2 ; getline
+							# get UL + Ratio lines
+							for (j=0;j<2;j++) {
+								print $2
+								getline
+							}
+						}
+	} while(getline)
+}
+
 function dl_info()
 {
 	FS="  +"
@@ -274,6 +328,10 @@ function dl_info()
 		tracker_seedul()
 	if (pickedtt)
 		tracker_total()
+	if (pickedttd)
+		tracker_total_details()
+	if (pickedtth)
+		tracker_total_hashop()
 	if (pickeddli)
 		dl_info()
 }

@@ -377,10 +377,10 @@ file -hb $0 | grep -q '^POSIX shell' && \
 		{ eval "echo ${0} | grep -qEx '[^/]+'" && \
 	  	  scrdir="." ;} \
 		  || \
-		scrdir="$(echo ${0} | sed -E 's/\/+[^\/]+$//')" \
+		scrdir=${0%/*} \
 	;} \
 || \
-scrdir="$(echo "$(file -hb $0)" | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
+scrdir="$(echo $(file -hb $0) | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
 
 TROP_TRACKER=${scrdir}/trackers
 auser=0 huser=0 PRIVATE=0

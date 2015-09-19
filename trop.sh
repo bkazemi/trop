@@ -11,10 +11,10 @@ usage ()
 	cat <<EOF >&2
 trop.sh - transmission-remote operations
 
-usage: ${PROG_NAME} [-b host:port] [-a auth] [options]
+usage: ${PROG_NAME} [-h host:port] [-a auth] [options]
 
 options:
- -b                       set host and port to connect to
+ -h                       set host and port to connect to
  -a                       set authorization information
  -p                       pass flags directly to tr-remote
  -dl                      show information about downloading torrents
@@ -28,7 +28,7 @@ options:
  -t   <torrent-id> <opts> pass tr-remote option to torrent
  -q                       suppress all message output
  -V                       show version information
- -h                       show this output
+ -help                    show this output
 EOF
 
 	exit 0
@@ -36,7 +36,7 @@ EOF
 
 uhc ()
 {
-	[ -n "$USERHOST" ] && printf "%s" "$USERHOST" || printf ""
+	[ -n "$USERHOST" ] && printf "$USERHOST" || printf ""
 }
 
 echo_wrap ()
@@ -149,14 +149,7 @@ trop_awk ()
 			[ -z $2 ] && return 41 # no alias
 			awk -f ${scrdir}/trop.awk -v silent=${silent} -v progname="trop.awk" func=tm ${2} ${TROP_TRACKER} \
 			|| return 42 # alias not found
-			case ${1} in
-			tt)
-				${awkopt} ${2} ${TROP_TRACKER} ${3} || return 31 # trop.awk failed
-				;;
-			*)
-				${awkopt} ${2} ${TROP_TRACKER} || return 31
-				;;
-			esac
+			${awkopt} ${2} ${TROP_TRACKER} ${3:-} || return 31 # trop.awk failed
 			;;
 		*)
 			${awkopt} || return 31
@@ -199,7 +192,7 @@ trop_tracker_total ()
 				if ($1 ~ /Hash:/)
 					print $2
 			}')
-			# torrent's idx was shifted
+			# if tth returns one, then torrent's idx was shifted
 			trop_awk 'tth' 'check' $h || continue
 			# else it is a new torrent
 			tta=`printf "%s\n%s" "$tta" "$(trop_torrent $(echo "$diff" | awk NR==${i}) i)"`
@@ -225,11 +218,13 @@ trop_tracker_total ()
 
 trop_torrent ()
 {
+	[ -z "$1" ] && usage
+
 	if [ -n "$1" ] && [ -z "$2" ]; then
 		transmission-remote $(uhc) -n "$AUTH" -$1 || die 1
 		return 0
 	fi
-	[ -z "$1" ] && usage
+	
 	transmission-remote $(uhc) -n "$AUTH" -t $1 -$2 || die 1
 }
 
@@ -251,11 +246,14 @@ trop_tracker_add()
 	if [ "$ast" = 'yes' ] || [ "$ast" = 'y' ]; then
 		printf 'how many trackers would you like to add? > '
 		read numt
-		# non digits are simply stripped
+		local numtlen=${#numt}
 		numt=$(echo $numt | tr -Cd '[:digit:]')
-		while [ ! $numt ] || [ "$numt" -le 0 ]; do
+		# if numt != numtlen, then numt
+		# was stripped and thus invalid
+		while [ ! $numt ] || [ $numt -le 0 ] || [ ${#numt} -ne $numtlen ]; do
 			printf "enter a valid number > "
 			read numt
+			numtlen=${#numt}
 			numt=$(echo $numt | tr -Cd '[:digit:]')
 		done
 	fi
@@ -289,9 +287,7 @@ die ()
 	[ -n "$1" ] && [ $silent -eq 0 ] && \
 		case ${1} in
 			1)
-			_ "\ntransmission-remote error\n"\
-			  "-OR-\n"\
-			  'command line pipe error'
+			_ "transmission-remote error"
 			break
 			;;
 ## FUNC GENERAL ERRORS ##
@@ -359,7 +355,7 @@ _ ()
 # ---------- main -------------
 unset _
 PROG_NAME=${0##*/}
-: ${@:?"$(printf "%s" "$(usage)")"}
+[ $# -eq 0 ] && usage
 hash transmission-remote 2>/dev/null || \
 { _ "can't find transmission-remote in PATH!" ; exit 1 ;}
 LC_ALL=POSIX
@@ -385,13 +381,11 @@ scrdir="$(echo $(file -hb $0) | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$/
 TROP_TRACKER=${scrdir}/trackers
 auser=0 huser=0 PRIVATE=0
 
-skip=0
 for i; do
-	[ $skip -eq 1 ] && { skip=0 ; continue ;}
 	case $i in
 		-p) 
-			skip=1 ; continue ;;
-		-h)
+			break ;;
+		-help)
 			usage ;;
 		-q)
 			silent=1 ;;
@@ -399,7 +393,6 @@ for i; do
 			echo "$TROP_VERSION" ; exit 0 ;;
 	esac
 done
-unset skip
 
 while [ $1 ]; do
 case $1 in
@@ -408,7 +401,7 @@ case $1 in
 		trop_private "seta" "$1" ; auser=1
 		shift
 		;;
-	-b)
+	-h)
 		shift
 		trop_private "seth" "$1" ; huser=1
 		shift
@@ -459,19 +452,29 @@ case $1 in
 		trop_tracker_total $1
 		shift
 		;;
-	-t)
+	-t|-t[0-9]*)
 		trop_private
-		shift
-		[ -n "$4" ] && die 5
+		if [ ${#1} -gt 2 ]; then 
+			one=${1}
+			tmp=${1##*[!0-9]}
+			tmp2=`echo $1 | cut -b3-`
+			shift ; savenextopts="$@"
+			[ ${#tmp} -lt ${#tmp2} ] && \
+			{ _ 'bad option `'${one}"'" ; usage ;} || \
+			set -- $tmp "$savenextopts"
+			unset one tmp tmp2 savenextopts
+		else
+			shift
+		fi
 		trop_torrent $1 $2
 		# over-shifting produces garbage
-		test $2 && shift 2 || shift
+		test -n "$2" && shift 2 || shift
 		;;
 	-p)
 		trop_private
 		shift
-		transmission-remote $(uhc) -n "$AUTH" ${1} || die 1
-		shift
+		transmission-remote $(uhc) -n "$AUTH" "$@" || die 1
+		exit 0
 		;;
 	-q) 
 		shift 

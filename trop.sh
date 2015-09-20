@@ -149,7 +149,7 @@ trop_awk ()
 			[ -z $2 ] && return 41 # no alias
 			awk -f ${scrdir}/trop.awk -v silent=${silent} -v progname="trop.awk" func=tm ${2} ${TROP_TRACKER} \
 			|| return 42 # alias not found
-			${awkopt} ${2} ${TROP_TRACKER} ${3:-} || return 31 # trop.awk failed
+			${awkopt} ${2} ${TROP_TRACKER} ${3} || return 31 # trop.awk failed
 			;;
 		*)
 			${awkopt} || return 31

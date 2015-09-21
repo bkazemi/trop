@@ -2,12 +2,13 @@
 ## Introduction
 
 trop is a shell script designed to make interaction with
-transmission-remote easier. It started as a group of different
-scripts I threw together to get specific information about
-torrents that was not explicitly included as an option in
-transmission-remote. My primary goal with this project is to
-get information or do common tasks in tr-remote in a convient
-way.
+transmission-remote easier. It features options to get
+information about tr-remote torrents by seeding torrents
+or by a specific set of tracker URLs. This project aims to
+provide information from transmission-remote to the user
+in a clean way, and make doing common tasks more automatic,
+interchangeably through command-line or scripts. The code
+is written to be as POSIX compliant as possible.
 
 ## Installing:
 
@@ -21,7 +22,7 @@ fashion, the only requirement is that all files distributed in
 the release are kept in the same directory. Any other configuration
 is not guaranteed to work.
 
-## The `tracker' file
+## The \`tracker' file
 
 The tracker file is used to bind an alias to a set of bittorrent tracker
 URLs. That way you can gather information about torrents specific to a tracker, or a

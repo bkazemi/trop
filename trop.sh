@@ -107,7 +107,7 @@ trop_make_file ()
 {
 	if [ "$1" = 'r' ]; then
 		[ "$2" = 'm' ] && { printf "$(tmf_mkr)" && return 0 || return 1 ;}
-		tmf_prefix="regfile"
+		local prefix='regfile'
 		tmf_mkr ()
 		{
 			touch "$(tmf_fname)" && \
@@ -115,7 +115,7 @@ trop_make_file ()
 		}
 	elif [ "$1" = 'p' ]; then
 		[ "$2" = 'm' ] && { printf "%s" "$(tmf_mkp)" && return 0 || return 1 ;}
-		tmf_prefix="np"
+		local prefix='np'
 		tmf_mkp ()
 		{
 			mkfifo "$(tmf_fname)" && \
@@ -124,10 +124,11 @@ trop_make_file ()
 	else
 		 die 21 # unknown filetype
 	fi
+
 	tmf_fname ()
 	{
 		while :; do
-			printf `mktemp -qu ${tmf_prefix}_trop.XXXXX` && return 0
+			printf `mktemp -qu ${prefix}_trop.XXXXX` && return 0
 		done
 	}
 
@@ -288,28 +289,23 @@ die ()
 		case ${1} in
 			1)
 			_ "transmission-remote error"
-			break
 			;;
 ## FUNC GENERAL ERRORS ##
 			2)
 			_ 'trop_seed_list() failed'
-			break
 			;;
 			21)
 			_ 'trop_make_file(): file not recognized'
-			break
 			;;
 			22)
 			_ 'pipe_check(): nothing on stdin,'\
 			  'probably nothing currently seeding'
-			break
 			;;
 			23)
 			_ 'trop_tracker_total(): caching error'
 			;;
 			24)
 			_ "trop_tracker_total(): failed getting torrent IDs"
-			break
 			;;
 ## FUNC ERR END $$
 			3)
@@ -317,7 +313,6 @@ die ()
 			;;
 			31)
 			_ 'trop.awk failed'
-			break
 			;;
 			32)
 			_ 'awk failed'
@@ -325,19 +320,19 @@ die ()
 ## TRACKER ERROR ##
 			4)
 			_ 'tracker file not found!'
-			break
 			;;
 			41)
 			_ 'no alias specified'
-			break
 			;;
 			42)
 			_ 'alias not found'
 			;;
 ## TRACKER ERR END $$
 			5)
-			_ 'multiple options not currently allowed'
-			break
+			_ "can't find transmission-remote in PATH!"
+			;;
+			51)
+			_ 'insufficient arguments'
 			;;
 			*)
 			_ 'error'
@@ -352,16 +347,15 @@ _ ()
 	echo -e ${PROG_NAME}":" "$@"
 }
 
-# ---------- main -------------
+# --------------- main --------------- #
 unset _
 PROG_NAME=${0##*/}
 [ $# -eq 0 ] && usage
-hash transmission-remote 2>/dev/null || \
-{ _ "can't find transmission-remote in PATH!" ; exit 1 ;}
 LC_ALL=POSIX
 toppid=$$
 silent=0
 trap 'set -e ; exit 1' 6
+hash transmission-remote 2>/dev/null || die 5
 
 # check if file used to call the script is a link or the script file itself
 # hard links will fail, so stick to sym links
@@ -455,6 +449,7 @@ case $1 in
 	-t|-t[0-9]*)
 		trop_private
 		if [ ${#1} -gt 2 ]; then 
+			[ ! "$2" ] && die 51
 			one=${1}
 			tmp=${1##*[!0-9]}
 			tmp2=`echo $1 | cut -b3-`

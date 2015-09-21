@@ -2,9 +2,9 @@
 
 # private vars for user info
 
-[ "$huser" = 0 ] && \
+[ $huser -eq 0 ] && \
 	export USERHOST='' # set here for default
-[ "$auser" = 0 ] && \
+[ $auser -eq 0 ] && \
 	export AUTH='' # set here for default
 
 set_uah ()

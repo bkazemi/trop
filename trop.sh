@@ -456,7 +456,7 @@ case $1 in
 			shift ; savenextopts="$@"
 			[ ${#tmp} -lt ${#tmp2} ] && \
 			{ _ 'bad option `'${one}"'" ; usage ;} || \
-			set -- $tmp "$savenextopts"
+			eval set -- $tmp "$savenextopts"
 			unset one tmp tmp2 savenextopts
 		else
 			shift

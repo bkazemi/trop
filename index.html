@@ -1,103 +1,44 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>trop by bkazemi</title>
-
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/github-light.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-  </head>
-  <body>
-    <div class="wrapper">
-      <header>
-        <h1>trop</h1>
-        <p>transmission-remote operations</p>
-
-        <p class="view"><a href="https://github.com/bkazemi/trop">View the Project on GitHub <small>bkazemi/trop</small></a></p>
-
-
-        <ul>
-          <li><a href="https://github.com/bkazemi/trop/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/bkazemi/trop/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/bkazemi/trop">View On <strong>GitHub</strong></a></li>
-        </ul>
-      </header>
-      <section>
-        <h1>
-<a id="trop" class="anchor" href="#trop" aria-hidden="true"><span class="octicon octicon-link"></span></a>trop</h1>
-
-<h2>
-<a id="introduction" class="anchor" href="#introduction" aria-hidden="true"><span class="octicon octicon-link"></span></a>Introduction</h2>
-
-<p>trop is a shell script designed to make interaction with
+	<head>
+		<meta charset='utf-8'>
+		<title>trop - transmission-remote operations</title>
+		<style>
+		body {
+			background : lightgrey;
+			font-family : monospace;
+			color : black;
+		}
+		h1 {
+			font : 12px monospace; 
+		}
+		hr {
+			margin-left : 0em;
+			width : 270px;
+		}
+		pre {
+			font : 15px monospace;
+		}
+		</style>
+	</head>
+	<body>
+		<h1>
+			<a href="http://github.com/bkazemi/trop">Project Page</a>
+			&nbsp;&nbsp;
+			<a href="http://github.com/bkazemi/trop/releases">Download</a>
+			&nbsp;&nbsp;
+			<a href="mailto:bkazemi@users.sf.net">Contact</a>
+		</h1>
+		<hr>
+<pre>
+trop is a shell script designed to make interaction with
 transmission-remote easier. It features options to get
 information about tr-remote torrents by seeding torrents
 or by a specific set of tracker URLs. This project aims to
 provide information from transmission-remote to the user
 in a clean way, and make doing common tasks more automatic,
 interchangeably through command-line or scripts. The code
-is written to be as POSIX compliant as possible.</p>
-
-<h2>
-<a id="installing" class="anchor" href="#installing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installing:</h2>
-
-<p>The recommended way to install trop is to use the `install.sh'
-script. The install script will install the trop files to the
-path specified in the PREFIX environment variable. The default
-path is `~/.trop'.</p>
-
-<p>If you prefer to install trop in a different
-fashion, the only requirement is that all files distributed in
-the release are kept in the same directory. Any other configuration
-is not guaranteed to work.</p>
-
-<h2>
-<a id="the-tracker-file" class="anchor" href="#the-tracker-file" aria-hidden="true"><span class="octicon octicon-link"></span></a>The `tracker' file</h2>
-
-<p>The tracker file is used to bind an alias to a set of bittorrent tracker
-URLs. That way you can gather information about torrents specific to a tracker, or a
-set of trackers.</p>
-
-<p>Here is an example of an entry:</p>
-
-<pre><code>example : primary-tracker.example.org
-    + second-tracker.example.org
-    + third-tracker.example.com
-</code></pre>
-
-<p>The first word is the alias; The second word is the primary tracker. Both these entries
-are required. The alias and all tracker entries must NOT contain any spaces. There must
-be a space on both sides of the alias-primary tracker seperator (the colon).
-Secondary tracker entries must contain a `+' symbol as the first non-whitespace character,
-followed by a space, then the tracker entry. There may not be more than one unique tracker URL entry
-in any alias. Any number of secondary trackers may be specified. You may interactively add trackers
-through the `-ta' flag in trop.</p>
-
-<h2>
-<a id="license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h2>
-
-<p>trop is licensed under the BSD2 Clause. See the LICENSE file for details.</p>
-
-<h2>
-<a id="contact" class="anchor" href="#contact" aria-hidden="true"><span class="octicon octicon-link"></span></a>Contact</h2>
-
-<p>For any questions, comments, etc. Contact me at:</p>
-
-<p><a href="mailto:bkazemi@users.sf.net">bkazemi@users.sf.net</a></p>
-
-<p>If you would like to contribute code, email me a patch or open a pull-request.</p>
-      </section>
-      <footer>
-        <p>This project is maintained by <a href="https://github.com/bkazemi">bkazemi</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
-    </div>
-    <script src="javascripts/scale.fix.js"></script>
-    
-  </body>
-</html>
+is written to be as POSIX compliant as possible.
+</pre>
+	</body>
+<html>

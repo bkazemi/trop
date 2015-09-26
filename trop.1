@@ -1,0 +1,172 @@
+.Dd September 25, 2015
+.Dt TROP 1
+.Os
+.Sh NAME
+.Nm trop
+.Nd transmission-remote operations
+.Sh SYNOPSIS
+.Nm
+.Op Fl h Ar HOST:PORT
+.Op Fl a Ar USER:PASS
+.Ar options ...
+.Sh DESCRIPTION
+.Nm
+is a shell script for Unix-like systems designed to make interaction with 
+.Xr transmission-remote 1
+easier.
+It is written in pure POSIX bourne shell and AWK;
+This allows trop to be used on nearly any Unix system that transmission can be built on.
+A nice feature of 
+.Nm
+is the ability to save the default host and authentication information in the
+.Pa tropriv.sh
+file.
+That way you don't have to supply this information on the command-line everytime you need to use tr-remote.
+It also features options to make common tr-remote tasks much quicker to type, like the
+.Fl t
+switch, which allows you to pass an option to a torrent without the dash before the flag.
+This simple shorthand makes using common commands like 
+.Dl transmission-remote Fl t Ar ID Fl i
+much less tedious on the day-to-day.
+.Pp
+The other goal of 
+.Nm
+is to provide statistical information about torrents in a clean fashion.
+An example of this need is when the user would like to view information about the upload rates of the torrents currently seeding.
+.Xr transmission-remote 1
+indeed provides a way to get this with the `-t all -l' sequence, but it is more information than needed, and the format is unwieldy.
+To combat this issue, 
+.Nm
+has the 
+.Fl sul
+switch to display the name and upload rate of seeding torrents in a clean format.
+.Nm
+also has the nifty feature to display torrent information from a set of tracker URLs.
+To achieve this, you define an alias that binds to one or more tracker URLs in the 
+.Pa tracker
+file distributed with
+.Nm .
+See 
+.Pa README
+for more information.
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl h Ar HOST:PORT
+Set the host and-or port that 
+.Xr transmission-remote 1
+will attempt to connect to.
+You may set either the 
+.Ar HOST
+or
+.Ar PORT 
+options seperately, or both with the colon format.
+You may NOT seperate them with a space.
+The default may be set in the USERHOST variable in the 
+.Pa tropriv.sh
+file.
+.It Fl a Ar USER:PASS
+Set the username and password that 
+.Xr transmission-remote 1
+will attempt to connect with.
+The default may be set in the AUTH variable in the 
+.Pa tropriv.sh
+file.
+.It Fl p Ar options ...
+Pass flags directly to 
+.Xr transmission-remote 1 .
+All successive flags will be interpreted as 
+.Xr transmission-remote 1
+flags.
+No
+.Nm 
+options may be supplied after this flag.
+.It Fl dl
+Show information about downloading torrents.
+This will include torrents that are both `uploading' and `downloading' information.
+.It Fl ns
+List number of torrents seeding.
+This does NOT include torrents that are both `uploading' and `downloading' information.
+.It Fl si
+Show information about seeding torrents.
+This flag will display all information about each seeding torrent (equivelant to `-t id -i' in tr-remote).
+.It Fl sul
+List seeding torrents and their upload rates.
+This flag will display the `Name' and `Upload' lines in a tabular format.
+.It Fl ta
+.Op Ar tracker-alias
+Add a tracker alias to the 
+.Pa tracker
+file interactively.
+This option will ask the user to enter a tracker alias, the primary tracker to be associated with this alias, whether or not to add any secondary trackers and how many, then each secondary tracker on seperate lines.
+.It Fl tul Ar tracker-alias
+Functionally equivalent to the 
+.Fl si
+flag, but gets seeding torrents by tracker-alias.
+.It Fl ts Ar tracker-alias
+List information about seeding torrents by tracker-alias. The information is more terse than that of 
+.Fl si
+, this is intentional;
+This switch was designed to filter out tracker-specific torrents in 
+.Fl si
+, and get more information about a specific torrent from this output.
+.It Fl tt Ar tracker-alias
+Show the total amount downloaded from a tracker set as seen by the trackers (freeleech downloads are not included).
+.It Fl t Ar option
+Pass a single option to a torrent.
+The option to supply is any valid option coupled with the tr-remote `-t' switch, however, the leading dash is removed.
+.It Fl q
+Suppress all message output from trop.
+.It Fl V
+Show version information.
+This includes the latest 
+.Xr transmission-remote 1
+version that trop was tested against.
+.It Fl help
+Print a short description of 
+.Nm 's
+options on the command-line.
+.Sh EXAMPLES
+Show details about the torrent with the ID 1:
+.Pp
+.Dl "trop -t1 i"
+.Pp
+Add a tracker alias named 'demonii':
+.Pp
+.Dl "trop -ta demonii"
+.Pp
+Show the upload rates of torrents under the 'demonii' alias:
+.Pp
+.Dl "trop -tul demonii"
+.Pp
+Supply the host and authorization information on the command-line:
+.Pp
+.Dl "trop -h example.org:6789 -a bob:secretpass -sul"
+.Sh ENVIRONMENT
+.Bl -tag -width Fl
+.It Ev USERHOST
+Host that transmision-remote uses to connect to the RPC session.
+.It Ev AUTH
+Authorization information 
+.Xr transmission-remote 1
+uses to connect to the RPC session.
+.It Ev TROP_TRACKER
+Contains the path to the trop AWK file.
+.It Ev LC_ALL
+trop sets the locale variables to `POSIX'.
+.Sh FILES
+.Bl -tag -width Fl -compact
+.It Pa install.sh
+trop installation script.
+.It Pa trop.sh
+Main program script.
+.It Pa tropriv.sh
+Used to store private user information.
+.It Pa trop.awk
+AWK script used for various trop procedures.
+.It Pa trackers
+Contains the tracker alias definitions.
+.Sh AUTHORS
+.An -nosplit
+.An bkazemi <bkazemi@users.noreply.github.com>
+.Sh SEE ALSO
+.Xr transmission-remote 1

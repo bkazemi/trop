@@ -2,6 +2,13 @@
 
 # private vars for user info
 
+# set USERHOST to the default address to connect to
+# transmission-remote's default is `localhost:9091'
+#
+# set AUTH to the user+pass used to authenticate the
+# tr-remote connection. Leave blank if no
+# authentication is used.
+
 [ $huser -eq 0 ] && \
 	export USERHOST='' # set here for default
 [ $auser -eq 0 ] && \

@@ -48,18 +48,18 @@ echo_wrap ()
 trop_private ()
 {
 	if [ -z "$1" ]; then
-		[ $PRIVATE -eq 1 ] || { . ${scrdir}/tropriv.sh ; PRIVATE=1 ;}
+		[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
 		transmission-remote $(uhc) -n "$AUTH" -st >&- 2<&- || die 3
 		return 0
 	fi
 
 	[ $auser -eq 1 ] && [ $huser -eq 1 ] && return 0
-	[ $PRIVATE -eq 1 ] || { . ${scrdir}/tropriv.sh ; PRIVATE=1 ;}
+	[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
 
 	[ "$1" = 'seth' ] && \
-		. ${scrdir}/tropriv.sh "$@" ; return 0
+		. ${srcdir}/tropriv.sh "$@" ; return 0
 	[ "$1" = 'seta' ] && \
-		. ${scrdir}/tropriv.sh "$@" ; return 0
+		. ${srcdir}/tropriv.sh "$@" ; return 0
 
 	return 0
 }
@@ -137,7 +137,7 @@ trop_make_file ()
 
 trop_awk ()
 {
-	local awkopt="awk -f ${scrdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${1}"
+	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${1}"
 	case ${1} in
 		ta)
 			${awkopt} ${2} ${TROP_TRACKER} ${3} "${4}" || return 31
@@ -148,7 +148,7 @@ trop_awk ()
 		t*)
 			[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
 			[ -z $2 ] && return 41 # no alias
-			awk -f ${scrdir}/trop.awk -v silent=${silent} -v progname="trop.awk" func=tm ${2} ${TROP_TRACKER} \
+			awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname="trop.awk" func=tm ${2} ${TROP_TRACKER} \
 			|| return 42 # alias not found
 			${awkopt} ${2} ${TROP_TRACKER} ${3} || return 31 # trop.awk failed
 			;;
@@ -168,24 +168,24 @@ trop_tracker_total ()
 	local t ta tt tta lst diff difftn diffu s
 	t="$1" tt=1 diffu=0
 	lst="$(trop_torrent l | awk '{ if ($1 !~ /Sum|ID/) print $1 }')" || die 24
-	[ ! -e "${scrdir}/.cache" ] && \
-		{ mkdir ${scrdir}/.cache || die 23 ;}
-	[ ! -e "${scrdir}/.cache/"$1"_lstp" ] && \
-		{ echo "$lst" > "${scrdir}/.cache/"${1}"_lstp" || die 23 ;} \
-	|| diff="$(echo "$lst" | diff --unchanged-line-format='' - ${scrdir}/.cache/"$1"_lstp)"
+	[ ! -e "${srcdir}/.cache" ] && \
+		{ mkdir ${srcdir}/.cache || die 23 ;}
+	[ ! -e "${srcdir}/.cache/"$1"_lstp" ] && \
+		{ echo "$lst" > "${srcdir}/.cache/"${1}"_lstp" || die 23 ;} \
+	|| diff="$(echo "$lst" | diff --unchanged-line-format='' - ${srcdir}/.cache/"$1"_lstp)"
 
 	i=1 tac=0
 	_ 'checking all torrent info...'
-	if [ ! -e "${scrdir}/.cache/"$1"_tap" ]; then
+	if [ ! -e "${srcdir}/.cache/"$1"_tap" ]; then
 		# first permanent cache
 		_ 'caching all torrent info'
 		ta="$(trop_torrent all i)"
-		echo "$ta" > ${scrdir}/.cache/"$1"_tap && tac=1 || die 23
-		echo "$ta" | trop_awk 'tth' 'add' > ${scrdir}/.cache/"$1"_thash || die 23
+		echo "$ta" > ${srcdir}/.cache/"$1"_tap && tac=1 || die 23
+		echo "$ta" | trop_awk 'tth' 'add' > ${srcdir}/.cache/"$1"_thash || die 23
 	fi
 
 	if [ -n "$diff" ]; then
-		tta=`cat ${scrdir}/.cache/"$1"_tap`
+		tta=`cat ${srcdir}/.cache/"$1"_tap`
 		difftn=$(echo "$diff" | wc -l)
 		local i=1 h
 		while [ $i -le $difftn ]; do
@@ -206,13 +206,13 @@ trop_tracker_total ()
 	if [ $diffu -eq 1 ]; then
 		s="$(echo "$tta" | trop_awk 'ttd' ${1})" || die $?
 	else
-		[ -e "${scrdir}/.cache/"$1"_ttotal" ] && { \
-			printf "Total downloaded: %s\n" "$(cat "${scrdir}/.cache/"$1"_ttotal")" || die 42 ; exit 0 ;}
-		s="$(cat ${scrdir}/.cache/"$1"_tap | trop_awk 'ttd' ${1})"
+		[ -e "${srcdir}/.cache/"$1"_ttotal" ] && { \
+			printf "Total downloaded: %s\n" "$(cat "${srcdir}/.cache/"$1"_ttotal")" || die 42 ; exit 0 ;}
+		s="$(cat ${srcdir}/.cache/"$1"_tap | trop_awk 'ttd' ${1})"
 	fi
 	local d="$(echo "$s" | awk \
 	          '{ if ($1 ~ /Downloaded/) print $2 $3 }')"
-	echo "$d" | trop_awk 'tt' $1 ${scrdir}/.cache/${1}_ttotal || die $?
+	echo "$d" | trop_awk 'tt' $1 ${srcdir}/.cache/${1}_ttotal || die $?
 
 	return 0
 }
@@ -362,17 +362,17 @@ hash transmission-remote 2>/dev/null || die 5
 file -hb $0 | grep -q '^POSIX shell' && \
 	{ \
 		{ eval "echo ${0} | grep -qEx '^\./{1}'" && \
-	  	  scrdir="." ;} \
+	  	  srcdir="." ;} \
 		  || \
 		{ eval "echo ${0} | grep -qEx '[^/]+'" && \
-	  	  scrdir="." ;} \
+	  	  srcdir="." ;} \
 		  || \
-		scrdir=${0%/*} \
+		srcdir=${0%/*} \
 	;} \
 || \
-scrdir="$(echo $(file -hb $0) | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
+srcdir="$(echo $(file -hb $0) | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
 
-TROP_TRACKER=${scrdir}/trackers
+TROP_TRACKER=${srcdir}/trackers
 auser=0 huser=0 PRIVATE=0
 
 for i; do

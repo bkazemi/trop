@@ -143,7 +143,9 @@ trop_awk ()
 			${awkopt} ${2} ${TROP_TRACKER} ${3} "${4}" || return 31
 			;;
 		tth)
-			${awkopt} ${2} || return 31
+			local thash=
+			[ -n "$4" ] && thash="${srcdir}/.cache/${4}_thash"
+			${awkopt} ${2} ${3} ${thash} || return 31
 			;;
 		t*)
 			[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
@@ -172,7 +174,7 @@ trop_tracker_total ()
 		{ mkdir ${srcdir}/.cache || die 23 ;}
 	[ ! -e "${srcdir}/.cache/"$1"_lstp" ] && \
 		{ echo "$lst" > "${srcdir}/.cache/"${1}"_lstp" || die 23 ;} \
-	|| diff="$(echo "$lst" | diff --unchanged-line-format='' - ${srcdir}/.cache/"$1"_lstp)"
+	|| diff="$(echo "$lst" | diff --unchanged-line-format='' --old-line-format='' ${srcdir}/.cache/"$1"_lstp -)"
 
 	i=1 tac=0
 	_ 'checking all torrent info...'
@@ -180,23 +182,25 @@ trop_tracker_total ()
 		# first permanent cache
 		_ 'caching all torrent info'
 		ta="$(trop_torrent all i)"
-		echo "$ta" > ${srcdir}/.cache/"$1"_tap && tac=1 || die 23
+		echo "$ta" > ${srcdir}/.cache/"$1"_tap && tac=1 && \
 		echo "$ta" | trop_awk 'tth' 'add' > ${srcdir}/.cache/"$1"_thash || die 23
 	fi
 
 	if [ -n "$diff" ]; then
 		tta=`cat ${srcdir}/.cache/"$1"_tap`
 		difftn=$(echo "$diff" | wc -l)
-		local i=1 h
+		local i=1 h tid
 		while [ $i -le $difftn ]; do
-			h=$(trop_torrent ${i} i | awk '{
+			tid=$(echo "$diff" | awk "NR==$i") \
+			&& \
+			h=$(trop_torrent ${tid} i | awk '{
 				if ($1 ~ /Hash:/)
 					print $2
-			}')
+			}') || die 23
 			# if tth returns one, then torrent's idx was shifted
-			trop_awk 'tth' 'check' $h || continue
+			trop_awk 'tth' 'check' $h ${1} || { : $((i += 1)) ; continue ;}
 			# else it is a new torrent
-			tta=`printf "%s\n%s" "$tta" "$(trop_torrent $(echo "$diff" | awk NR==${i}) i)"`
+			tta=`printf "%s\n%s" "$tta" "$(trop_torrent ${tid} i)"`
 			: $((i += 1))
 		done
 		diffu=1

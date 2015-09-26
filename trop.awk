@@ -13,7 +13,7 @@
 BEGIN {
 	if (!length(ARGV[1])) exit
 	if (!progname) progname = "trop.awk"
-	tmerr = pickedtm = pickedtsi = pickedsul = pickedtsul = pickedtt = 0
+	skip = tmerr = pickedtm = pickedtsi = pickedsul = pickedtsul = pickedtt = 0
 	for (i = 1; i < ARGC; i++) {
 		if (ARGV[i] ~ /^func=/) {
 			if (ARGV[i] ~ /tsi$/) {
@@ -37,7 +37,7 @@ BEGIN {
 				pickedtth = 1
 				c = 0
 				if ((op = ARGV[i+1]) == "check") {
-					c = 1
+					c = skip = 1
 					hash = ARGV[i+2]
 				}
 				delargs(i, i+=(c ? 2 : 1))
@@ -60,6 +60,9 @@ BEGIN {
 				err("invalid function")
 			}
 		} else if (ARGV[i] == "-") {
+			continue
+		} else if (skip) {
+			skip = 0
 			continue
 		} else {
 			err("invalid option `"ARGV[i]"'")
@@ -258,9 +261,9 @@ function tracker_total_hashop()
 {
 	if (op == "check") {
 		do {
-			if ($1 ~ /^Hash:/)
-				if ($2 == hash)
-					exit 1
+			#if ($1 ~ /^Hash:/ && $2 == hash)
+			if ($1 == hash)
+				exit 1
 		} while (getline)
 		return 0
 	} else if (op == "add") {

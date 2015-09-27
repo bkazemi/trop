@@ -25,7 +25,7 @@ options:
  -tul <tracker-alias>     list seeding torrents and their UL rates by tracker
  -tt  <tracker-alias>     show total amount downloaded from tracker
  -ts  <tracker-alias>     list seeding torrents by tracker
- -t   <torrent-id> <opts> pass tr-remote option to torrent
+ -t   <torrent-id> <opt>  pass tr-remote option to torrent
  -q                       suppress all message output
  -V                       show version information
  -help                    show this output
@@ -224,13 +224,16 @@ trop_tracker_total ()
 trop_torrent ()
 {
 	[ -z "$1" ] && usage
-
+	local opt
 	if [ -n "$1" ] && [ -z "$2" ]; then
-		transmission-remote $(uhc) -n "$AUTH" -$1 || die 1
+		# if there are 3 or more chars than it is a long option
+		[ ${#1} -gt 2 ] && opt="--${2}" || opt="-${2}"
+		transmission-remote $(uhc) -n "$AUTH" ${opt_or_tid} || die 1
 		return 0
 	fi
 
-	transmission-remote $(uhc) -n "$AUTH" -t $1 -$2 || die 1
+	[ ${#2} -gt 2 ] && opt="--${2}" || opt="-${2}"
+	transmission-remote $(uhc) -n "$AUTH" -t $1 $opt || die 1
 }
 
 trop_tracker_add()
@@ -281,8 +284,6 @@ pipe_check ()
 	if [ -n "$inp" ]; then
 		# pass along...
 		echo "$inp" | eval "$1" || return $?
-		#local out="$(echo "$inp" | eval "$1")" || return $?
-		#[ -z "$out" ] && return 22 || echo "$out"
 		return 0
 	fi
 	return 22 \

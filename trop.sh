@@ -281,6 +281,8 @@ pipe_check ()
 	if [ -n "$inp" ]; then
 		# pass along...
 		echo "$inp" | eval "$1" || return $?
+		#local out="$(echo "$inp" | eval "$1")" || return $?
+		#[ -z "$out" ] && return 22 || echo "$out"
 		return 0
 	fi
 	return 22 \
@@ -348,7 +350,7 @@ die ()
 _ ()
 {
 	[ $silent -eq 0 ] && \
-	echo -e ${PROG_NAME}":" "$@"
+	echo -e ${PROG_NAME}":" "$@" >&2
 }
 
 # --------------- main --------------- #

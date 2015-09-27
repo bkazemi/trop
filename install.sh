@@ -19,7 +19,9 @@ if [ $st_uid -eq 0 ] && [ $(id -u) -ne 0 ]; then
 	[ -d \"$PREFIX\" ] || mkdir \"${PREFIX}\"
 	[ $tlnf -eq 1 ] && { echo \"removing ${TROP_LN_FILE} to link trop.sh\" ; rm -f ${TROP_LN_FILE} \
                                 || err \"failed to remove \\\`${TROP_LN_FILE}\\\"\" ;}
-	cp -p README LICENSE trop.sh trop.awk tropriv.sh trackers ${PREFIX} || err 'failed to copy files'
+	install -p -m 0550 trop.sh trop.awk ${PREFIX}        && \
+	install -p -m 0640 README LICENSE trackers ${PREFIX} && \
+	install -p -m 0770 tropriv.sh ${PREFIX}              || err 'failed to install files'
 	install -g 0 -o 0 -m 0644 trop.1 /usr/local/man/man1/ && gzip /usr/local/man/man1/trop.1 \
 	err \"couldn't install man page\"
 	ln -s ${PREFIX}/trop.sh ${TROP_LN_FILE} || err \"couldn't link trop.sh\"
@@ -28,11 +30,13 @@ else
     [ -d "$PREFIX" ] || mkdir "${PREFIX}"
     [ $tlnf -eq 1 ] && { echo "removing ${TROP_LN_FILE} to link trop.sh" ; rm -f ${TROP_LN_FILE} \
                                 || err "failed to remove \`${TROP_LN_FILE}\"" ;}
-    cp -p README LICENSE trop.sh trop.awk tropriv.sh trackers ${PREFIX} || err 'failed to copy files'
+    install -p -m 0550 trop.sh trop.awk ${PREFIX}        && \
+	install -p -m 0640 README LICENSE trackers ${PREFIX} && \
+	install -p -m 0770 tropriv.sh ${PREFIX}              || err 'failed to install files'
 	echo 'Enter root credentials'
 	su -m root -c \
 	" 
-	install -g 0 -o 0 -m 0644 trop.1 /usr/local/man/man1/ && gzip /usr/local/man/man1/trop.1 \
+	install -g 0 -o 0 -m 0640 trop.1 /usr/local/man/man1/ && gzip /usr/local/man/man1/trop.1 \
 	|| err \"couldn't install man page\"
 	"
     ln -s ${PREFIX}/trop.sh ${TROP_LN_FILE} || err "couldn't link trop.sh"

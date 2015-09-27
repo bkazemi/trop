@@ -22,6 +22,19 @@ fashion, the only requirement is that all files distributed in
 the release are kept in the same directory. Any other configuration
 is not guaranteed to work.
 
+## Storing tr-remote authentication information
+
+To save a default host and/or user:pass combination, the tropriv.sh file was created.
+To save the host information, open tropriv.sh and enter the default you'd like to use in
+the USERHOST variable like so:
+```
+USERHOST='example.org:1234' # set here for default
+```
+And likewise for the user:pass (-n switch in tr-remote)
+```
+AUTH='bob:secretpass' # set here for default
+```
+
 ## The \`tracker' file
 
 The tracker file is used to bind an alias to a set of bittorrent tracker
@@ -36,7 +49,7 @@ example : primary-tracker.example.org
 ```
 The first word is the alias; The second word is the primary tracker. Both these entries
 are required. The alias and all tracker entries must NOT contain any spaces. There must
-be a space on both sides of the alias-primary tracker seperator (the colon).
+be a space on both sides of the alias-primary tracker separator (the colon).
 Secondary tracker entries must contain a \`+' symbol as the first non-whitespace character,
 followed by a space, then the tracker entry. There may not be more than one unique tracker URL entry
 in any alias. Any number of secondary trackers may be specified. You may interactively add trackers

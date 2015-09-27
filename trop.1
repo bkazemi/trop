@@ -23,7 +23,7 @@ A nice feature of
 is the ability to save the default host and authentication information in the
 .Pa tropriv.sh
 file.
-That way you don't have to supply this information on the command-line everytime you need to use tr-remote.
+That way you don't have to supply this information on the command-line every time you need to use tr-remote.
 It also features options to make common tr-remote tasks much quicker to type, like the
 .Fl t
 switch, which allows you to pass an option to a torrent without the dash before the flag.
@@ -61,13 +61,13 @@ You may set either the
 .Ar HOST
 or
 .Ar PORT 
-options seperately, or both with the colon format.
-You may NOT seperate them with a space.
+options separately, or both with the colon format.
+You may NOT separate them with a space.
 The default may be set in the USERHOST variable in the 
 .Pa tropriv.sh
 file.
 .It Fl a Ar USER:PASS
-Set the username and password that 
+Set the user-name and password that 
 .Xr transmission-remote 1
 will attempt to connect with.
 The default may be set in the AUTH variable in the 
@@ -98,7 +98,7 @@ This flag will display the `Name' and `Upload' lines in a tabular format.
 Add a tracker alias to the 
 .Pa tracker
 file interactively.
-This option will ask the user to enter a tracker alias, the primary tracker to be associated with this alias, whether or not to add any secondary trackers and how many, then each secondary tracker on seperate lines.
+This option will ask the user to enter a tracker alias, the primary tracker to be associated with this alias, whether or not to add any secondary trackers and how many, then each secondary tracker on separate lines.
 .It Fl tul Ar tracker-alias
 Functionally equivalent to the 
 .Fl si
@@ -111,8 +111,8 @@ This switch was designed to filter out tracker-specific torrents in
 .Fl si ,
 and get more information about a specific torrent from this output.
 .It Fl tt Ar tracker-alias
-Show the total amount downloaded from a tracker set as seen by the trackers (freeleech downloads are not included).
-.It Fl t Ar option
+Show the total amount downloaded from a tracker set as seen by the trackers (free-leech downloads are not included).
+.It Fl t Ar ID Ar option
 Pass a single option to a torrent.
 The option to supply is any valid option coupled with the tr-remote `-t' switch, however, the leading dash is removed.
 .It Fl q
@@ -146,7 +146,7 @@ Supply the host and authorization information on the command-line:
 .Sh ENVIRONMENT
 .Bl -tag -width Fl
 .It Ev USERHOST
-Host that transmision-remote uses to connect to the RPC session.
+Host that transmission-remote uses to connect to the RPC session.
 .It Ev AUTH
 Authorization information 
 .Xr transmission-remote 1

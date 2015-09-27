@@ -1,16 +1,19 @@
 # current options include:
 #   func=
 #     tm   - run tracker_match function
+#     tmo  - run tracker_match_other function
 #     tsi  - run tracker_seed_info function
 #     sul  - run seed_ulrate function
 #     tsul - run tracker_seedul function
 #     tt   - run tracker_total function
+#     ttd  - run tracker_total_details function
+#     tth  - run tracker_total_hashop function
 #     ta   - run tracker_add function
 #     dli  - run dl_info function
 BEGIN {
 	if (!length(ARGV[1])) exit
 	if (!progname) progname = "trop.awk"
-	tmerr = pickedtm = pickedtsi = pickedsul = pickedtsul = pickedtt = 0
+	skip = tmerr = pickedtm = pickedtsi = pickedsul = pickedtsul = pickedtt = 0
 	for (i = 1; i < ARGC; i++) {
 		if (ARGV[i] ~ /^func=/) {
 			if (ARGV[i] ~ /tsi$/) {
@@ -26,6 +29,18 @@ BEGIN {
 				tracker_match(ARGV[i+1], ARGV[i+2])
 				cachefile = ARGV[i+3]
 				delargs(i, i+=3)
+			} else if (ARGV[i] ~ /ttd$/) {
+				tmerr = pickedttd = 1
+				tracker_match(ARGV[i+1], ARGV[i+2])
+				delargs(i, i+=2)
+			} else if (ARGV[i] ~ /tth$/) {
+				pickedtth = 1
+				c = 0
+				if ((op = ARGV[i+1]) == "check") {
+					c = skip = 1
+					hash = ARGV[i+2]
+				}
+				delargs(i, i+=(c ? 2 : 1))
 			} else if (ARGV[i] ~ /tmo$/) {
 				tracker_match_other(ARGV[i+1], ARGV[i+2])
 				delargs(i, i+=2)
@@ -45,6 +60,9 @@ BEGIN {
 				err("invalid function")
 			}
 		} else if (ARGV[i] == "-") {
+			continue
+		} else if (skip) {
+			skip = 0
 			continue
 		} else {
 			err("invalid option `"ARGV[i]"'")
@@ -88,8 +106,8 @@ function tracker_match(alias, tfile)
 			}
 		}
 	}
-	
-	close(tfile) 
+
+	close(tfile)
 	return (!length(allt)) ? (tmerr ? err("tracker alias not found") : 1) : 0
 }
 
@@ -117,7 +135,7 @@ function tracker_match_other(alias, tfile, stlst)
 				err("tracker `" stlst[j] "' already defined")
 		}
 	}
-	
+
 	return 0
 }
 
@@ -160,7 +178,7 @@ function tracker_seed_info()
 		else if ($0 ~ /^[[:space:]]*Hash:/)
 			hash = $0
 	} while (getline)
-	
+
 	return 0
 }
 
@@ -183,7 +201,7 @@ function tracker_seedul()
 				if (!ul) exit 1
 				sub(/^[[:space:]]*/, "", ul)
 				tsularr[idx++] = name ; tsularr[idx++] = ul
-			} 
+			}
 		}
 		if ($0 ~ /^[[:space:]]*Name:/)
 			name = $0
@@ -239,6 +257,45 @@ function tracker_total()
 	return 0
 }
 
+function tracker_total_hashop()
+{
+	if (op == "check") {
+		do {
+			#if ($1 ~ /^Hash:/ && $2 == hash)
+			if ($1 == hash)
+				exit 1
+		} while (getline)
+		return 0
+	} else if (op == "add") {
+		do {
+			if ($1 ~ /^Hash:/)
+				print $2
+		} while (getline)
+	}
+
+	return 0
+}
+
+function tracker_total_details()
+{
+	if (!$0) exit 1
+	FS="  +"
+	do {
+		if ($2 ~ /^Magnet:/)
+			for (i in allt)
+				if ($2 ~ ".*&tr=.*"allt[i]".*")
+					while (getline)
+						if ($2 ~ /^Downloaded:/) {
+							print $2 ; getline
+							# get UL + Ratio lines
+							for (j=0;j<2;j++) {
+								print $2
+								getline
+							}
+						}
+	} while(getline)
+}
+
 function dl_info()
 {
 	FS="  +"
@@ -274,6 +331,10 @@ function dl_info()
 		tracker_seedul()
 	if (pickedtt)
 		tracker_total()
+	if (pickedttd)
+		tracker_total_details()
+	if (pickedtth)
+		tracker_total_hashop()
 	if (pickeddli)
 		dl_info()
 }

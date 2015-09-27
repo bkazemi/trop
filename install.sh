@@ -35,7 +35,7 @@ else
 	install -p -m 0770 tropriv.sh ${PREFIX}              || err 'failed to install files'
 	echo 'Enter root credentials'
 	su -m root -c \
-	" 
+	"
 	install -g 0 -o 0 -m 0640 trop.1 /usr/local/man/man1/ && gzip /usr/local/man/man1/trop.1 \
 	|| err \"couldn't install man page\"
 	"

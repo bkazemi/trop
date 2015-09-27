@@ -18,7 +18,7 @@ set_uah ()
 { export USERHOST="$1" && return 0  || return 1 ;}
 
 set_auth ()
-{ export AUTH="$1" && return 0 || return 1 ;} 
+{ export AUTH="$1" && return 0 || return 1 ;}
 
 [ "$1" = 'seth' ] && set_uah "$2"
 [ "$1" = 'seta' ] && set_auth "$2"

@@ -229,7 +229,7 @@ trop_torrent ()
 		transmission-remote $(uhc) -n "$AUTH" -$1 || die 1
 		return 0
 	fi
-	
+
 	transmission-remote $(uhc) -n "$AUTH" -t $1 -$2 || die 1
 }
 
@@ -383,7 +383,7 @@ auser=0 huser=0 PRIVATE=0
 
 for i; do
 	case $i in
-		-p) 
+		-p)
 			break ;;
 		-help)
 			usage ;;
@@ -407,7 +407,7 @@ case $1 in
 		shift
 		;;
 	-dl)
-		trop_private	
+		trop_private
 		trop_torrent all i | trop_awk 'dli' || die 31
 		shift
 		;;
@@ -454,7 +454,7 @@ case $1 in
 		;;
 	-t|-t[0-9]*)
 		trop_private
-		if [ ${#1} -gt 2 ]; then 
+		if [ ${#1} -gt 2 ]; then
 			[ ! "$2" ] && die 51
 			one=${1}
 			tmp=${1##*[!0-9]}
@@ -477,8 +477,8 @@ case $1 in
 		transmission-remote $(uhc) -n "$AUTH" "$@" || die 1
 		exit 0
 		;;
-	-q) 
-		shift 
+	-q)
+		shift
 		;;
 	-*)
 		_ 'bad option `'${1}"'" && usage

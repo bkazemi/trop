@@ -25,11 +25,11 @@ is not guaranteed to work.
 To save a default host and/or user:pass combination, the tropriv.sh file was created.
 To save the host information, open tropriv.sh and enter the default you'd like to use in
 the USERHOST variable like so:
-	
+
 	USERHOST='example.org:1234' # set here for default
 
 And likewise for the user:pass (-n switch in tr-remote)
-	
+
 	AUTH='bob:secretpass' # set here for default
 
 | The `tracker' file

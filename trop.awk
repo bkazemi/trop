@@ -106,8 +106,8 @@ function tracker_match(alias, tfile)
 			}
 		}
 	}
-	
-	close(tfile) 
+
+	close(tfile)
 	return (!length(allt)) ? (tmerr ? err("tracker alias not found") : 1) : 0
 }
 
@@ -135,7 +135,7 @@ function tracker_match_other(alias, tfile, stlst)
 				err("tracker `" stlst[j] "' already defined")
 		}
 	}
-	
+
 	return 0
 }
 
@@ -178,7 +178,7 @@ function tracker_seed_info()
 		else if ($0 ~ /^[[:space:]]*Hash:/)
 			hash = $0
 	} while (getline)
-	
+
 	return 0
 }
 
@@ -201,7 +201,7 @@ function tracker_seedul()
 				if (!ul) exit 1
 				sub(/^[[:space:]]*/, "", ul)
 				tsularr[idx++] = name ; tsularr[idx++] = ul
-			} 
+			}
 		}
 		if ($0 ~ /^[[:space:]]*Name:/)
 			name = $0
@@ -270,7 +270,7 @@ function tracker_total_hashop()
 		do {
 			if ($1 ~ /^Hash:/)
 				print $2
-		} while (getline)	
+		} while (getline)
 	}
 
 	return 0

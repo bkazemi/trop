@@ -3,7 +3,7 @@
 # TODO: implement mass location change
 
 TROP_VERSION=\
-'trop 1.0.0
+'trop 1.1.0
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -43,24 +43,28 @@ uhc ()
 echo_wrap ()
 {
 	# in case echo is used to display anything to user
-	[ $silent -eq 0 ] && echo "$@"
+	[ $silent -eq 0 ] && echo "$@" >&2
 }
 
 trop_private ()
 {
+	## $1 - specify set{a,h} to set USERHOST or AUTH
+	## $2 - the user-specified USERHOST/AUTH
+
 	if [ -z "$1" ]; then
+		local trout
 		[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
-		transmission-remote $(uhc) -n "$AUTH" -st >&- 2<&- || die 3
+		trout=$(transmission-remote $(uhc) -n "$AUTH" -st 2>&1) || \
+		{ [ -n "$trout" ] && echo_wrap "transmission-remote:" "$trout" ; die 3 ;}
 		return 0
 	fi
 
 	[ $auser -eq 1 ] && [ $huser -eq 1 ] && return 0
 	[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
 
-	[ "$1" = 'seth' ] && \
+	if [ "$1" = 'seth' ] || [ "$1" = 'seta' ]; then
 		. ${srcdir}/tropriv.sh "$@" ; return 0
-	[ "$1" = 'seta' ] && \
-		. ${srcdir}/tropriv.sh "$@" ; return 0
+	fi
 
 	return 0
 }
@@ -88,24 +92,33 @@ trop_seed_info ()
 
 trop_seed_ulrate ()
 {
+	## $1 - alias
+
 	trop_seed_info | pipe_check "trop_awk 'sul'" || die $?
 	return 0
 }
 
 trop_seed_tracker_ul()
 {
+	## $1 - alias
+
 	trop_seed_info | pipe_check "trop_awk 'tsul' $1" || die $?
 	return 0
 }
 
 trop_seed_tracker ()
 {
+	## $1 - alias
+
 	trop_seed_info | pipe_check "trop_awk 'tsi' $1" || die $?
 	return 0
 }
 
 trop_make_file ()
 {
+	## $1 - type of file to create
+    ## $2 - `m' to create
+
 	if [ "$1" = 'r' ]; then
 		[ "$2" = 'm' ] && { printf "$(tmf_mkr)" && return 0 || return 1 ;}
 		local prefix='regfile'
@@ -138,6 +151,9 @@ trop_make_file ()
 
 trop_awk ()
 {
+	## $1 - AWK function to execute
+	## {$2..$n} - options to pass to AWK function
+
 	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${1}"
 	case ${1} in
 		ta)
@@ -165,6 +181,8 @@ trop_awk ()
 
 trop_tracker_total ()
 {
+	## $1 - alias
+
 	[ -z "$1" ] && die 41
 	# check if alias is defined
 	trop_awk 'tm' ${1} || die 42
@@ -224,10 +242,13 @@ trop_tracker_total ()
 
 trop_torrent ()
 {
+	## $1 - torrent ID or single opt
+	## $2 - option paired with torrent ID
+
 	[ -z "$1" ] && usage
 	local opt
 	if [ -n "$1" ] && [ -z "$2" ]; then
-		# if there are 3 or more chars than it is a long option
+		# if there are 3 or more chars then it is a long option
 		[ ${#1} -gt 2 ] && opt="--${1}" || opt="-${1}"
 		transmission-remote $(uhc) -n "$AUTH" ${opt} || die 1
 		return 0
@@ -239,6 +260,8 @@ trop_torrent ()
 
 trop_tracker_add()
 {
+	## $1 - alias to add
+
 	[ -n "$1" ] && a=$1 || \
 	{ printf 'enter alias to use > ' ; read a ;}
 	printf 'enter primary tracker > '
@@ -280,6 +303,8 @@ trop_tracker_add()
 
 pipe_check ()
 {
+	##	$1 - shell commands
+
 	{ \
 	local inp="$(cat /dev/stdin)"
 	if [ -n "$inp" ]; then
@@ -293,6 +318,8 @@ pipe_check ()
 
 trop_errors ()
 {
+	## $1 - error code
+
 	case ${1} in
 		1)
 		_ "transmission-remote error"
@@ -322,7 +349,7 @@ trop_errors ()
 		;;
 ## FUNC ERR END $$
 		3)
-		_ 'bad host/auth'
+		_ "couldn't connect to transmisson session"
 		;;
 		31)
 		_ 'trop.awk failed'
@@ -356,12 +383,16 @@ trop_errors ()
 
 die ()
 {
+	## $1 - error code
+
 	[ -n "$1" ] && [ $silent -eq 0 ] && trop_errors $1
 	kill -6 $toppid
 }
 
 check_tracker_errors ()
 {
+	## $1 - silence warning
+
 	trop_private
 	trop_torrent l | awk '
 		$1 ~ /\*/ {
@@ -374,7 +405,7 @@ check_tracker_errors ()
 
 show_tracker_errors ()
 {
-	check_tracker_errors 'q' || die 25
+	check_tracker_errors 1 || die 25
 	trop_torrent l | awk '
 		$1 ~ /\*/ {
 			print $1
@@ -386,12 +417,16 @@ show_tracker_errors ()
 
 _ ()
 {
+	## $@ - strings to echo
+
 	[ $silent -eq 0 ] && \
 	echo -e ${PROG_NAME}":" "$@" >&2
 }
 
 _e ()
 {
+	## $1 - error code
+
 	trop_errors $1
 
 	return 0
@@ -435,26 +470,30 @@ for i; do
 			silent=1 ;;
 		-V)
 			echo "$TROP_VERSION" ; exit 0 ;;
-		-terr) cte=0 ;;
+		-terr)
+			cte=0 ;;
 	esac
 done
 
-[ $cte -eq 1 ] && check_tracker_errors
+while :; do
+	case $1 in
+		-h)
+			trop_private "seth" "$2" ; huser=1
+			shift 2
+			;;
+		-a)
+			trop_private "seta" "$2" ; auser=1
+			shift 2
+			;;
+		*) break ;;
+	esac
+done
+
+[ $silent -eq 0 ] && [ $cte -eq 1 ] && check_tracker_errors
 
 while [ $1 ]; do
 case $1 in
-	-a)
-		shift
-		trop_private "seta" "$1" ; auser=1
-		shift
-		;;
-	-h)
-		shift
-		trop_private "seth" "$1" ; huser=1
-		shift
-		;;
 	-terr)
-		shift
 		show_tracker_errors ; exit 0
 		;;
 	-dl)
@@ -463,45 +502,41 @@ case $1 in
 		shift
 		;;
 	-ns)
-		shift
 		trop_private
 		trop_num_seed
+		shift
 		;;
 	-si)
-		shift
 		trop_private
 		trop_seed_info
+		shift
 		;;
 	-sul)
-		shift
 		trop_private
 		trop_seed_ulrate
+		shift
 		;;
 	-s)
-		_ "options include \`-si' or \`-sul'" && exit 0
+		_ "options include \`-si' or \`-sul'" ; exit 0
 		;;
 	-ta)
-		shift
 		trop_tracker_add $1
 		exit 0
 		;;
 	-ts)
 		trop_private
-		shift
-		trop_seed_tracker $1
-		shift
+		trop_seed_tracker $2
+		shift 2
 		;;
 	-tul)
 		trop_private
-		shift
-		trop_seed_tracker_ul $1
-		shift
+		trop_seed_tracker_ul $2
+		shift 2
 		;;
 	-tt)
 		trop_private
-		shift
-		trop_tracker_total $1
-		shift
+		trop_tracker_total $2
+		shift 2
 		;;
 	-t|-t[0-9]*)
 		trop_private

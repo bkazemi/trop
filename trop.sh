@@ -26,6 +26,7 @@ options:
  -tt  <tracker-alias>     show total amount downloaded from tracker
  -ts  <tracker-alias>     list seeding torrents by tracker
  -t   <torrent-id> <opt>  pass tr-remote option to torrent
+ -terr                    show torrents that have errors
  -q                       suppress all message output
  -V                       show version information
  -help                    show this output
@@ -227,8 +228,8 @@ trop_torrent ()
 	local opt
 	if [ -n "$1" ] && [ -z "$2" ]; then
 		# if there are 3 or more chars than it is a long option
-		[ ${#1} -gt 2 ] && opt="--${2}" || opt="-${2}"
-		transmission-remote $(uhc) -n "$AUTH" ${opt_or_tid} || die 1
+		[ ${#1} -gt 2 ] && opt="--${1}" || opt="-${1}"
+		transmission-remote $(uhc) -n "$AUTH" ${opt} || die 1
 		return 0
 	fi
 
@@ -290,68 +291,110 @@ pipe_check ()
 	;}
 }
 
+trop_errors ()
+{
+	case ${1} in
+		1)
+		_ "transmission-remote error"
+		;;
+## FUNC GENERAL ERRORS ##
+		2)
+		_ 'trop_seed_list() failed'
+		;;
+		21)
+		_ 'trop_make_file(): file not recognized'
+		;;
+		22)
+		_ 'pipe_check(): nothing on stdin,'\
+		  'probably nothing currently seeding'
+		;;
+		23)
+		_ 'trop_tracker_total(): caching error'
+		;;
+		24)
+		_ "trop_tracker_total(): failed getting torrent IDs"
+		;;
+		25)
+		_ 'no tracker errors detected.'
+		;;
+		26)
+		_ "WARNING: trop detected a tracker error. Use the \`-terr\` switch to show more info."
+		;;
+## FUNC ERR END $$
+		3)
+		_ 'bad host/auth'
+		;;
+		31)
+		_ 'trop.awk failed'
+		;;
+		32)
+		_ 'awk failed'
+		;;
+## TRACKER ERROR ##
+		4)
+		_ 'tracker file not found!'
+		;;
+		41)
+		_ 'no alias specified'
+		;;
+		42)
+		_ 'alias not found'
+		;;
+## TRACKER ERR END $$
+		5)
+		_ "can't find transmission-remote in PATH!"
+		;;
+		51)
+		_ 'insufficient arguments'
+		;;
+		*)
+		_ 'error'
+		;;
+	esac
+
+}
+
 die ()
 {
-	[ -n "$1" ] && [ $silent -eq 0 ] && \
-		case ${1} in
-			1)
-			_ "transmission-remote error"
-			;;
-## FUNC GENERAL ERRORS ##
-			2)
-			_ 'trop_seed_list() failed'
-			;;
-			21)
-			_ 'trop_make_file(): file not recognized'
-			;;
-			22)
-			_ 'pipe_check(): nothing on stdin,'\
-			  'probably nothing currently seeding'
-			;;
-			23)
-			_ 'trop_tracker_total(): caching error'
-			;;
-			24)
-			_ "trop_tracker_total(): failed getting torrent IDs"
-			;;
-## FUNC ERR END $$
-			3)
-			_ 'bad host/auth'
-			;;
-			31)
-			_ 'trop.awk failed'
-			;;
-			32)
-			_ 'awk failed'
-			;;
-## TRACKER ERROR ##
-			4)
-			_ 'tracker file not found!'
-			;;
-			41)
-			_ 'no alias specified'
-			;;
-			42)
-			_ 'alias not found'
-			;;
-## TRACKER ERR END $$
-			5)
-			_ "can't find transmission-remote in PATH!"
-			;;
-			51)
-			_ 'insufficient arguments'
-			;;
-			*)
-			_ 'error'
-			;;
-		esac
+	[ -n "$1" ] && [ $silent -eq 0 ] && trop_errors $1
 	kill -6 $toppid
+}
+
+check_tracker_errors ()
+{
+	trop_private
+	trop_torrent l | awk '
+		$1 ~ /\*/ {
+			exit 1
+		}
+	' && return 1 || { [ -z "$1" ] && _e 26 ;}
+
+	return 0
+}
+
+show_tracker_errors ()
+{
+	check_tracker_errors 'q' || die 25
+	trop_torrent l | awk '
+		$1 ~ /\*/ {
+			print $1
+		}
+	' | tr -d \* | while read id; do
+		trop_torrent ${id} i
+	done | trop_awk 'ste'
 }
 
 _ ()
 {
 	[ $silent -eq 0 ] && \
 	echo -e ${PROG_NAME}":" "$@" >&2
+}
+
+_e ()
+{
+	trop_errors $1
+
+	return 0
 }
 
 # --------------- main --------------- #
@@ -380,7 +423,7 @@ file -hb $0 | grep -q '^POSIX shell' && \
 srcdir="$(echo $(file -hb $0) | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
 
 TROP_TRACKER=${srcdir}/trackers
-auser=0 huser=0 PRIVATE=0
+auser=0 huser=0 PRIVATE=0 cte=1
 
 for i; do
 	case $i in
@@ -392,8 +435,11 @@ for i; do
 			silent=1 ;;
 		-V)
 			echo "$TROP_VERSION" ; exit 0 ;;
+		-terr) cte=0 ;;
 	esac
 done
+
+[ $cte -eq 1 ] && check_tracker_errors
 
 while [ $1 ]; do
 case $1 in
@@ -406,6 +452,10 @@ case $1 in
 		shift
 		trop_private "seth" "$1" ; huser=1
 		shift
+		;;
+	-terr)
+		shift
+		show_tracker_errors ; exit 0
 		;;
 	-dl)
 		trop_private

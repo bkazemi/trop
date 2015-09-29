@@ -115,6 +115,10 @@ Show the total amount downloaded from a tracker set as seen by the trackers (fre
 .It Fl t Ar ID Ar option
 Pass a single option to a torrent.
 The option to supply is any valid option coupled with the tr-remote `-t' switch, however, the leading dash is removed.
+.It Fl terr
+Show the name, ID, location and error field of torrents that show signs of an error.
+.Nm
+will warn the user if it detects a torrent error.
 .It Fl q
 Suppress all message output from
 .Nm .
@@ -175,7 +179,7 @@ procedures.
 Contains the tracker alias definitions.
 .Sh AUTHORS
 .An -nosplit
-.An bkazemi <bkazemi@users.noreply.github.com>
+.An bkazemi <bkazemi@users.sf.net>
 .Sh SEE ALSO
 .Xr transmission-remote 1
 .Sh BUGS

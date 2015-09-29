@@ -10,6 +10,7 @@
 #     tth  - run tracker_total_hashop function
 #     ta   - run tracker_add function
 #     dli  - run dl_info function
+#     ste  - run show_tracker_errors function
 BEGIN {
 	if (!length(ARGV[1])) exit
 	if (!progname) progname = "trop.awk"
@@ -52,6 +53,9 @@ BEGIN {
 				exit 0
 			} else if (ARGV[i] ~ /sul$/) {
 				pickedsul = 1
+				delete ARGV[i]
+			} else if (ARGV[i] ~ /ste$/) {
+				pickedte = 1
 				delete ARGV[i]
 			} else if (ARGV[i] ~ /dli$/) {
 				tmerr = pickeddli = 1
@@ -322,6 +326,21 @@ function dl_info()
 	} while (getline)
 }
 
+function show_tracker_errors()
+{
+	FS="  +"
+	do {
+		if ($2 ~ /^Name:/) {
+			print $2
+			print id
+		} else if ($2 ~ /^Id:/) {
+			id = $0
+		} else if ($2 ~ /^(Location:)|(Error:)/) {
+			print $0
+		}
+	} while (getline)
+}
+
 {
 	if (pickedtsi)
 		tracker_seed_info()
@@ -337,6 +356,8 @@ function dl_info()
 		tracker_total_hashop()
 	if (pickeddli)
 		dl_info()
+	if (pickedte)
+		show_tracker_errors()
 }
 
 END {

@@ -117,7 +117,7 @@ trop_seed_tracker ()
 trop_make_file ()
 {
 	## $1 - type of file to create
-    ## $2 - `m' to create
+	## $2 - `m' to create
 
 	if [ "$1" = 'r' ]; then
 		[ "$2" = 'm' ] && { printf "$(tmf_mkr)" && return 0 || return 1 ;}
@@ -520,7 +520,7 @@ case $1 in
 		_ "options include \`-si' or \`-sul'" ; exit 0
 		;;
 	-ta)
-		trop_tracker_add $1
+		trop_tracker_add $2
 		exit 0
 		;;
 	-ts)

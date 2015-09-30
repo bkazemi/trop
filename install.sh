@@ -17,7 +17,7 @@ eval $(stat -qs ${PREFIX%/*})
 : ${TROP_LN_FILE:=/usr/local/bin/trop}
 # install.sh will not create intermediate directories.
 [ ! -e ${TROP_LN_FILE%/*} ] && err 'invalid path for TROP_LN_FILE'
-[ -e "${TROP_LN_FILE}"    ] && err 'TROP_LN_FILE file already exists'
+[ -e ${TROP_LN_FILE}      ] && err 'TROP_LN_FILE file already exists'
 
 mkdir ${PREFIX}
 install -p -m 0550 trop.sh trop.awk        ${PREFIX} && \

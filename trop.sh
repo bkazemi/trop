@@ -37,7 +37,7 @@ EOF
 
 uhc ()
 {
-	[ -n "$USERHOST" ] && printf "$USERHOST" || printf ""
+	[ -n "$USERHOST" ] && printf -- "$USERHOST" || printf ""
 }
 
 echo_wrap ()
@@ -55,7 +55,7 @@ trop_private ()
 		local trout
 		[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
 		trout=$(transmission-remote $(uhc) -n "$AUTH" -st 2>&1) || \
-		{ [ -n "$trout" ] && echo_wrap "transmission-remote:" "$trout" ; die 3 ;}
+		{ [ -n "$trout" ] && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" ; die 3 ;}
 		return 0
 	fi
 
@@ -345,7 +345,7 @@ trop_errors ()
 		_ 'no tracker errors detected.'
 		;;
 		26)
-		_ "WARNING: trop detected a tracker error. Use the \`-terr\` switch to show more info."
+		_ "WARNING: trop detected a tracker error. Use the \`-terr\' switch to show more info."
 		;;
 ## FUNC ERR END $$
 		3)
@@ -373,6 +373,12 @@ trop_errors ()
 		;;
 		51)
 		_ 'insufficient arguments'
+		;;
+		52)
+		_ 'bad format for host'
+		;;
+		53)
+		_ 'bad format for auth'
 		;;
 		*)
 		_ 'error'
@@ -478,10 +484,13 @@ done
 while :; do
 	case $1 in
 		-h)
+			# regex checks for bad format in host, eg: awd:123g4 -- bad port
+			echo $2 | grep -qE '^-|([[:alnum:]]*:.*[^0-9].*)|(:$)' && die 52
 			trop_private "seth" "$2" ; huser=1
 			shift 2
 			;;
 		-a)
+			echo $2 | grep -qE '^-' && die 53
 			trop_private "seta" "$2" ; auser=1
 			shift 2
 			;;

@@ -156,24 +156,24 @@ trop_awk ()
 
 	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${1}"
 	case ${1} in
-		ta)
-			${awkopt} ${2} ${TROP_TRACKER} ${3} "${4}" || return 31
-			;;
-		tth)
-			local thash=
-			[ -n "$4" ] && thash="${srcdir}/.cache/${4}_thash"
-			${awkopt} ${2} ${3} ${thash} || return 31
-			;;
-		t*)
-			[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
-			[ -z $2 ] && return 41 # no alias
-			awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname="trop.awk" func=tm ${2} ${TROP_TRACKER} \
-			|| return 42 # alias not found
-			${awkopt} ${2} ${TROP_TRACKER} ${3} || return 31 # trop.awk failed
-			;;
-		*)
-			${awkopt} || return 31
-			;;
+	ta)
+		${awkopt} ${2} ${TROP_TRACKER} ${3} "${4}" || return 31
+		;;
+	tth)
+		local thash=
+		[ -n "$4" ] && thash="${srcdir}/.cache/${4}_thash"
+		${awkopt} ${2} ${3} ${thash} || return 31
+		;;
+	t*)
+		[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
+		[ -z $2 ] && return 41 # no alias
+		awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname="trop.awk" func=tm ${2} ${TROP_TRACKER} \
+		|| return 42 # alias not found
+		${awkopt} ${2} ${TROP_TRACKER} ${3} || return 31 # trop.awk failed
+		;;
+	*)
+		${awkopt} || return 31
+		;;
 	esac
 
 	return 0
@@ -264,31 +264,32 @@ trop_tracker_add()
 
 	[ -n "$1" ] && a=$1 || \
 	{ printf 'enter alias to use > ' ; read a ;}
-	printf 'enter primary tracker > '
-	read pt
-	printf 'add secondary tracker(s)? y/n > '
-	read ast
-	ast=$(echo $ast | tr '[:upper:]' '[:lower:]')
-	while [ "$ast" != 'y' ] && [ "$ast" != 'n' ] \
-          && [ "$ast" != 'yes' ] && [ "$ast" != 'no' ]; do
-		printf 'please answer yes or no > '
-		read ast
-		ast=$(echo $ast | tr '[:upper:]' '[:lower:]')
-	done
-	if [ "$ast" = 'yes' ] || [ "$ast" = 'y' ]; then
-		printf 'how many trackers would you like to add? > '
-		read numt
-		local numtlen=${#numt}
-		numt=$(echo $numt | tr -Cd '[:digit:]')
-		# if numt != numtlen, then numt
-		# was stripped and thus invalid
-		while [ ! $numt ] || [ $numt -le 0 ] || [ ${#numt} -ne $numtlen ]; do
-			printf "enter a valid number > "
-			read numt
-			numtlen=${#numt}
+	printf 'enter primary tracker > '         ; read pt
+	printf 'add secondary tracker(s)? y/n > ' ; read ast
+	[ ${#ast} -gt 1 ] && ast=$(echo $ast | tr '[:upper:]' '[:lower:]')
+	while :; do
+		case $ast in
+		[Yy]|yes)
+			printf 'how many trackers would you like to add? > ' ; read numt
+			local numtlen=${#numt}
 			numt=$(echo $numt | tr -Cd '[:digit:]')
-		done
-	fi
+			# if numt != numtlen, then numt
+			# was stripped and thus invalid
+			while [ ! $numt ] || [ $numt -le 0 ] || [ ${#numt} -ne $numtlen ]; do
+				printf "enter a valid number > "
+				read numt
+				numtlen=${#numt}
+				numt=$(echo $numt | tr -Cd '[:digit:]')
+			done
+			break
+			;;
+		[Nn]|no) break ;;
+		*)
+			printf 'please answer yes or no > ' ; read ast
+			[ ${#ast} -gt 1 ] && ast=$(echo $ast | tr '[:upper:]' '[:lower:]')
+			;;
+		esac
+	done
 	[ ! $numt ] && numt=0 st='NULL'
 	local i=1
 	while [ $i -le $numt ]; do
@@ -321,66 +322,66 @@ trop_errors ()
 	## $1 - error code
 
 	case ${1} in
-		1)
+	1)
 		_ "transmission-remote error"
 		;;
 ## FUNC GENERAL ERRORS ##
-		2)
+	2)
 		_ 'trop_seed_list() failed'
 		;;
-		21)
+	21)
 		_ 'trop_make_file(): file not recognized'
 		;;
-		22)
+	22)
 		_ 'pipe_check(): nothing on stdin,'\
 		  'probably nothing currently seeding'
 		;;
-		23)
+	23)
 		_ 'trop_tracker_total(): caching error'
 		;;
-		24)
+	24)
 		_ "trop_tracker_total(): failed getting torrent IDs"
 		;;
-		25)
+	25)
 		_ 'no tracker errors detected.'
 		;;
-		26)
+	26)
 		_ "WARNING: trop detected a tracker error. Use the \`-terr\' switch to show more info."
 		;;
 ## FUNC ERR END $$
-		3)
+	3)
 		_ "couldn't connect to transmisson session"
 		;;
-		31)
+	31)
 		_ 'trop.awk failed'
 		;;
-		32)
+	32)
 		_ 'awk failed'
 		;;
 ## TRACKER ERROR ##
-		4)
+	4)
 		_ 'tracker file not found!'
 		;;
-		41)
+	41)
 		_ 'no alias specified'
 		;;
-		42)
+	42)
 		_ 'alias not found'
 		;;
 ## TRACKER ERR END $$
-		5)
+	5)
 		_ "can't find transmission-remote in PATH!"
 		;;
-		51)
+	51)
 		_ 'insufficient arguments'
 		;;
-		52)
+	52)
 		_ 'bad format for host'
 		;;
-		53)
+	53)
 		_ 'bad format for auth'
 		;;
-		*)
+	*)
 		_ 'error'
 		;;
 	esac
@@ -468,40 +469,40 @@ auser=0 huser=0 PRIVATE=0 cte=1
 
 for i; do
 	case $i in
-		-p)
-			break ;;
-		-help)
-			usage ;;
-		-q)
-			silent=1 ;;
-		-V)
-			echo "$TROP_VERSION" ; exit 0 ;;
-		-terr)
-			cte=0 ;;
+	-p)
+		break ;;
+	-help)
+		usage ;;
+	-q)
+		silent=1 ;;
+	-V)
+		echo "$TROP_VERSION" ; exit 0 ;;
+	-terr|-ta)
+		cte=0 ;;
 	esac
 done
 
 while :; do
 	case $1 in
-		-h)
-			# regex checks for bad format in host, eg: awd:123g4 -- bad port
-			echo $2 | grep -qE '^-|([[:alnum:]]*:.*[^0-9].*)|(:$)' && die 52
-			trop_private "seth" "$2" ; huser=1
-			shift 2
-			;;
-		-a)
-			echo $2 | grep -qE '^-' && die 53
-			trop_private "seta" "$2" ; auser=1
-			shift 2
-			;;
-		*) break ;;
+	-h)
+		# regex checks for bad format in host, eg: awd:123g4 -- bad port
+		echo $2 | grep -qE '^-|([[:alnum:]]*:.*[^0-9].*)|(:$)' && die 52
+		trop_private "seth" "$2" ; huser=1
+		shift 2
+		;;
+	-a)
+		echo $2 | grep -qE '^-' && die 53
+		trop_private "seta" "$2" ; auser=1
+		shift 2
+		;;
+	*) break ;;
 	esac
 done
 
 [ $silent -eq 0 ] && [ $cte -eq 1 ] && check_tracker_errors
 
 while [ $1 ]; do
-case $1 in
+	case $1 in
 	-terr)
 		show_tracker_errors ; exit 0
 		;;
@@ -581,7 +582,7 @@ case $1 in
 	*)
 		_ 'unrecognized input' && usage
 		;;
-esac
+	esac
 done
 
 exit 0

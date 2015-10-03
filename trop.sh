@@ -38,12 +38,16 @@ EOF
 uhc ()
 {
 	[ -n "$USERHOST" ] && printf -- "$USERHOST" || printf ""
+
+	return 0
 }
 
 echo_wrap ()
 {
 	# in case echo is used to display anything to user
 	[ $silent -eq 0 ] && echo "$@" >&2
+
+	return 0
 }
 
 trop_private ()
@@ -72,11 +76,14 @@ trop_private ()
 trop_seed_list ()
 {
 	transmission-remote $(uhc) -n "$AUTH" -l 2>/dev/null | awk '$9 == "Seeding"' || die 32
+
+	return 0
 }
 
 trop_num_seed ()
 {
 	trop_seed_list | pipe_check "wc -l | tr -d '[:blank:]'" || die $?
+
 	return 0
 }
 
@@ -88,6 +95,8 @@ trop_seed_info ()
 		trop_torrent ${l} i
 		echo ----
 	done' || die $?
+
+	return 0
 }
 
 trop_seed_ulrate ()
@@ -95,6 +104,7 @@ trop_seed_ulrate ()
 	## $1 - alias
 
 	trop_seed_info | pipe_check "trop_awk 'sul'" || die $?
+
 	return 0
 }
 
@@ -103,6 +113,7 @@ trop_seed_tracker_ul()
 	## $1 - alias
 
 	trop_seed_info | pipe_check "trop_awk 'tsul' $1" || die $?
+
 	return 0
 }
 
@@ -111,6 +122,7 @@ trop_seed_tracker ()
 	## $1 - alias
 
 	trop_seed_info | pipe_check "trop_awk 'tsi' $1" || die $?
+
 	return 0
 }
 
@@ -256,6 +268,41 @@ trop_torrent ()
 
 	[ ${#2} -gt 2 ] && opt="--${2}" || opt="-${2}"
 	transmission-remote $(uhc) -n "$AUTH" -t $1 $opt || die 1
+
+	return 0
+}
+
+trop_torrent_done ()
+{
+	[ ! -e ${srcdir}/.cache/tdscript ] && touch ${srcdir}/.cache/tdscript
+	if [ -n "$1" ]; then
+		[ -z "$2" ] && die 51
+		cat ${srcdir}/.cache/tdscript | while read tid; do
+			echo $tid | cut -f1 -d' ' | [ "$(cat -)" = "$1" ] && \
+			die 28
+		done
+		case $2 in
+		rm)
+			[ "$3" = 'hard' ] && rmcmd='R' || rmcmd='r'
+			echo "$1" ${rmcmd} >> ${srcdir}/.cache/tdscript
+			break
+			;;
+		*)
+			die 29
+			;;
+		esac
+	fi
+	local nr=0 tid
+	cat ${srcdir}/.cache/tdscript | while read id_and_cmd; do
+		: $((nr += 1))
+		tid=$(echo $id_and_cmd | cut -f1 -d' ')
+		[ "$(trop_torrent $tid i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ] && \
+		eval trop_torrent $id_and_cmd || die 27 $tid
+		_ "successfully processed command on torrent ${tid}, removing ..." 2>> ${srcdir}/trop.log
+		sed -Ie "${nr}d;q" ${srcdir}/.cache/tdscript
+	done
+
+	return 0
 }
 
 trop_tracker_add()
@@ -300,6 +347,8 @@ trop_tracker_add()
 		: $((i += 1))
 	done
 	trop_awk 'ta' $a $pt "$st" || die $?
+
+	return 0
 }
 
 pipe_check ()
@@ -348,6 +397,15 @@ trop_errors ()
 	26)
 		_ "WARNING: trop detected a tracker error. Use the \`-terr\' switch to show more info."
 		;;
+	27)
+		_ 'trop_tracker_done(): failed to perform requested action on torrent' "$2"
+		;;
+	28)
+		_ 'trop_tracker_done(): torrent already scheduled for action'
+		;;
+	29)
+		_ 'trop_tracker_done(): unknown action'
+		;;
 ## FUNC ERR END $$
 	3)
 		_ "couldn't connect to transmisson session"
@@ -373,26 +431,25 @@ trop_errors ()
 		_ "can't find transmission-remote in PATH!"
 		;;
 	51)
-		_ 'insufficient arguments'
+		_ 'insufficient arguments' "$2"
 		;;
 	52)
-		_ 'bad format for host'
-		;;
-	53)
-		_ 'bad format for auth'
+		_ 'bad format' "$2"
+
 		;;
 	*)
 		_ 'error'
 		;;
 	esac
 
+	return 0
 }
 
 die ()
 {
 	## $1 - error code
 
-	[ -n "$1" ] && [ $silent -eq 0 ] && trop_errors $1
+	[ -n "$1" ] && [ $silent -eq 0 ] && trop_errors $1 "$2"
 	kill -6 $toppid
 }
 
@@ -420,6 +477,8 @@ show_tracker_errors ()
 	' | tr -d \* | while read id; do
 		trop_torrent ${id} i
 	done | trop_awk 'ste'
+
+	return 0
 }
 
 _ ()
@@ -428,13 +487,15 @@ _ ()
 
 	[ $silent -eq 0 ] && \
 	echo -e ${PROG_NAME}":" "$@" >&2
+
+	return 0
 }
 
 _e ()
 {
 	## $1 - error code
 
-	trop_errors $1
+	trop_errors $1 "$2"
 
 	return 0
 }
@@ -477,7 +538,7 @@ for i; do
 		silent=1 ;;
 	-V)
 		echo "$TROP_VERSION" ; exit 0 ;;
-	-terr|-ta)
+	-terr|-ta|-td)
 		cte=0 ;;
 	esac
 done
@@ -485,13 +546,15 @@ done
 while :; do
 	case $1 in
 	-h)
+		test -z "$2" && die 51 "for \`-h'"
 		# regex checks for bad format in host, eg: awd:123g4 -- bad port
-		echo $2 | grep -qE '^-|([[:alnum:]]*:.*[^0-9].*)|(:$)' && die 52
+		echo $2 | grep -qE '^-|([[:alnum:]]*:.*[^0-9].*)|(:$)' && die 52 "for \`-h'"
 		trop_private "seth" "$2" ; huser=1
 		shift 2
 		;;
 	-a)
-		echo $2 | grep -qE '^-' && die 53
+		test -z "$2" && die 51 "for \`-a'"
+		echo $2 | grep -qE '^-' && die 52 "for \`-a'"
 		trop_private "seta" "$2" ; auser=1
 		shift 2
 		;;
@@ -533,6 +596,11 @@ while [ $1 ]; do
 		trop_tracker_add $2
 		exit 0
 		;;
+	-td|-tdauto)
+		[ "$1" = '-tdauto' ] && trop_private 2>>${srcdir}/trop.log
+		trop_torrent_done "$2" "$3" "$4"
+		exit 0
+		;;
 	-ts)
 		trop_private
 		trop_seed_tracker $2
@@ -568,9 +636,12 @@ while [ $1 ]; do
 		test -n "$2" && shift 2 || shift
 		;;
 	-p)
+		test -z "$2" && die 51 "for \`-p'"
 		trop_private
 		shift
-		transmission-remote $(uhc) -n "$AUTH" "$@" || die 1
+		trout=$(transmission-remote $(uhc) -n "$AUTH" "$@" 2>&1) || \
+		{ [ -n "$trout" ] && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" ; die 1 ;}
+		[ -n "$trout" ] && echo "$trout"
 		exit 0
 		;;
 	-q)

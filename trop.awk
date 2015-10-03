@@ -1,16 +1,16 @@
 # current options include:
 #   func=
-#     tm   - run tracker_match function
-#     tmo  - run tracker_match_other function
-#     tsi  - run tracker_seed_info function
-#     sul  - run seed_ulrate function
-#     tsul - run tracker_seedul function
-#     tt   - run tracker_total function
+#     tm   - run tracker_match         function
+#     tmo  - run tracker_match_other   function
+#     tsi  - run tracker_seed_info     function
+#     sul  - run seed_ulrate           function
+#     tsul - run tracker_seedul        function
+#     tt   - run tracker_total         function
 #     ttd  - run tracker_total_details function
-#     tth  - run tracker_total_hashop function
-#     ta   - run tracker_add function
-#     dli  - run dl_info function
-#     ste  - run show_tracker_errors function
+#     tth  - run tracker_total_hashop  function
+#     ta   - run tracker_add           function
+#     dli  - run dl_info               function
+#     ste  - run show_tracker_errors   function
 BEGIN {
 	if (!length(ARGV[1])) exit
 	if (!progname) progname = "trop.awk"
@@ -266,7 +266,6 @@ function tracker_total_hashop()
 {
 	if (op == "check") {
 		do {
-			#if ($1 ~ /^Hash:/ && $2 == hash)
 			if ($1 == hash)
 				exit 1
 		} while (getline)

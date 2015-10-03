@@ -10,15 +10,17 @@
 # authentication is used.
 
 [ $huser -eq 0 ] && \
-	export USERHOST='' # set here for default
+	# set here for default
+	USERHOST='' ; export USERHOST
 [ $auser -eq 0 ] && \
-	export AUTH='' # set here for default
+	# set here for default
+	AUTH='' ; export AUTH
 
 set_uah ()
-{ export USERHOST="$1" && return 0  || return 1 ;}
+{ USERHOST="$1" ; export USERHOST && return 0  || return 1 ;}
 
 set_auth ()
-{ export AUTH="$1" && return 0 || return 1 ;}
+{ AUTH="$1" ; export AUTH && return 0 || return 1 ;}
 
 [ "$1" = 'seth' ] && set_uah "$2"
 [ "$1" = 'seta' ] && set_auth "$2"

@@ -115,10 +115,31 @@ Show the total amount downloaded from a tracker set as seen by the trackers (fre
 .It Fl t Ar ID Ar option
 Pass a single option to a torrent.
 The option to supply is any valid option coupled with the tr-remote `-t' switch, however, the leading dash is removed.
+.It Fl td Ar ID Ar action
+Add torrent to a queue that will perform
+.Ar action
+when it completes.
+The variables ADD_TRACKER_DONE and ADD_TRACKER_DONE_ACT in
+.Pa trop.conf
+are used to control the behavior of this command.
+See
+.Pa README
+for more information.
+Current actions include:
+.Dl Sy rm Op Ar hard
+.Dl Remove torrent when done. Adding `hard' will remove files as well.
+.Dl Sy stop
+.Dl Stop the torrent when done. This will halt seeding of the torrent.
 .It Fl terr
 Show the name, ID, location and error field of torrents that show signs of an error.
 .Nm
 will warn the user if it detects a torrent error.
+.It Fl startup
+Initalize
+.Nm
+defaults upon login. See
+.Pa README
+for more information.
 .It Fl q
 Suppress all message output from
 .Nm .
@@ -169,6 +190,8 @@ sets the locale variables to `POSIX'.
 installation script.
 .It Pa trop.sh
 Main program script.
+.It Pa trop.conf
+Configuration file.
 .It Pa tropriv.sh
 Used to store private user information.
 .It Pa trop.awk

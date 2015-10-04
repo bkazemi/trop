@@ -14,22 +14,24 @@ trop.sh - transmission-remote operations
 usage: ${PROG_NAME} [-h host:port] [-a auth] [options]
 
 options:
- -h                       set host and port to connect to
- -a                       set authorization information
- -p                       pass flags directly to tr-remote
- -dl                      show information about downloading torrents
- -ns                      list number of torrents actively seeding
- -si                      show information about seeding torrents
- -sul                     list seeding torrents and their upload rates
- -ta  [tracker-alias]     add a tracker alias interactively
- -tul <tracker-alias>     list seeding torrents and their UL rates by tracker
- -tt  <tracker-alias>     show total amount downloaded from tracker
- -ts  <tracker-alias>     list seeding torrents by tracker
- -t   <torrent-id> <opt>  pass tr-remote option to torrent
- -terr                    show torrents that have errors
- -q                       suppress all message output
- -V                       show version information
- -help                    show this output
+ -h                        set host and port to connect to
+ -a                        set authorization information
+ -p                        pass flags directly to tr-remote
+ -dl                       show information about downloading torrents
+ -ns                       list number of torrents actively seeding
+ -si                       show information about seeding torrents
+ -sul                      list seeding torrents and their upload rates
+ -ta   [tracker-alias]     add a tracker alias interactively
+ -tul  <tracker-alias>     list seeding torrents and their UL rates by tracker
+ -tt   <tracker-alias>     show total amount downloaded from tracker
+ -ts   <tracker-alias>     list seeding torrents by tracker
+ -t    <torrent-id> <opt>  pass tr-remote option to torrent
+ -td   <torrent-id> <act>  have torrent perform action upon DL completion
+ -terr                     show torrents that have errors
+ -startup                  setup defaults - intended to be used when logging in
+ -q                        suppress all message output
+ -V                        show version information
+ -help                     show this output
 EOF
 
 	exit 0
@@ -274,6 +276,9 @@ trop_torrent ()
 
 trop_torrent_done ()
 {
+	## $1 - torrent ID
+	## $2 - action to perform when torrent finishes
+
 	[ ! -e ${srcdir}/.cache/tdscript ] && touch ${srcdir}/.cache/tdscript
 	if [ -n "$1" ]; then
 		[ -z "$2" ] && die 51
@@ -283,14 +288,17 @@ trop_torrent_done ()
 		done
 		case $2 in
 		rm)
-			[ "$3" = 'hard' ] && rmcmd='R' || rmcmd='r'
+			[ "$3" = 'hard' ] && rmcmd='R' || rmcmd='remove-and-delete'
 			echo "$1" ${rmcmd} >> ${srcdir}/.cache/tdscript
-			break
+			;;
+		stop)
+			echo "$1" 'S' >> ${srcdir}/.cache/tdscript
 			;;
 		*)
 			die 29
 			;;
 		esac
+		return 0
 	fi
 	local nr=0 tid
 	cat ${srcdir}/.cache/tdscript | while read id_and_cmd; do
@@ -298,7 +306,7 @@ trop_torrent_done ()
 		tid=$(echo $id_and_cmd | cut -f1 -d' ')
 		[ "$(trop_torrent $tid i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ] && \
 		eval trop_torrent $id_and_cmd || die 27 $tid
-		_ "successfully processed command on torrent ${tid}, removing ..." 2>> ${srcdir}/trop.log
+		_ "successfully processed command on torrent ${tid}, removing ..." 2>>${TROP_LOG_PATH}
 		sed -Ie "${nr}d;q" ${srcdir}/.cache/tdscript
 	done
 
@@ -404,7 +412,9 @@ trop_errors ()
 		_ 'trop_tracker_done(): torrent already scheduled for action'
 		;;
 	29)
-		_ 'trop_tracker_done(): unknown action'
+		_ "trop_tracker_done(): unknown action -- actions include:\n" \
+		  " rm [hard] - Remove torrent when done. Adding \`hard' will remove files as well.\n"\
+		  " stop - Stop the torrent when done. This will halt seeding of the torrent."
 		;;
 ## FUNC ERR END $$
 	3)
@@ -527,6 +537,8 @@ srcdir="$(echo $(file -hb $0) | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$/
 
 TROP_TRACKER=${srcdir}/trackers
 auser=0 huser=0 PRIVATE=0 cte=1
+. ${srcdir}/trop.conf # various user options
+[ "$TROP_LOG" = 'yes' ] && : ${TROP_LOG_PATH:=${srcdir}/trop.log}
 
 for i; do
 	case $i in
@@ -538,7 +550,7 @@ for i; do
 		silent=1 ;;
 	-V)
 		echo "$TROP_VERSION" ; exit 0 ;;
-	-terr|-ta|-td)
+	-terr|-ta|-td|tdauto|-startup)
 		cte=0 ;;
 	esac
 done
@@ -596,8 +608,8 @@ while [ $1 ]; do
 		trop_tracker_add $2
 		exit 0
 		;;
-	-td|-tdauto)
-		[ "$1" = '-tdauto' ] && trop_private 2>>${srcdir}/trop.log
+	-td|tdauto)
+		[ "$1" = 'tdauto' ] && trop_private 2>>${TROP_LOG_PATH}
 		trop_torrent_done "$2" "$3" "$4"
 		exit 0
 		;;
@@ -619,15 +631,12 @@ while [ $1 ]; do
 	-t|-t[0-9]*)
 		trop_private
 		if [ ${#1} -gt 2 ]; then
-			[ ! "$2" ] && die 51
-			one=${1}
-			tmp=${1##*[!0-9]}
-			tmp2=`echo $1 | cut -b3-`
+			[ ! "$2" ] && die 51 "for \`-t'"
+			one=${1#-t}
+			echo ${one} | grep -qE '[^0-9,-]' && die 52 "for \`-t'"
 			shift ; savenextopts="$@"
-			[ ${#tmp} -lt ${#tmp2} ] && \
-			{ _ 'bad option `'${one}"'" ; usage ;} || \
-			eval set -- $tmp "$savenextopts"
-			unset one tmp tmp2 savenextopts
+			eval set -- ${one} "$savenextopts"
+			unset one savenextopts
 		else
 			shift
 		fi
@@ -642,7 +651,15 @@ while [ $1 ]; do
 		trout=$(transmission-remote $(uhc) -n "$AUTH" "$@" 2>&1) || \
 		{ [ -n "$trout" ] && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" ; die 1 ;}
 		[ -n "$trout" ] && echo "$trout"
+		echo "$@" | grep -qE '^(-a)|(-add)' && [ "$ADD_TORRENT_DONE" = 'yes' ] && \
+		tid=$(trop_torrent l | awk '$1 !~ /(ID)|(Sum)/{print $1}' | sort -rn | sed 1q)
+		[ -n "$tid" ] && trop_torrent_done ${tid} ${ADD_TORRENT_DONE_ACT:-rm}
 		exit 0
+		;;
+	-startup)
+		trop_private 2>>${TROP_LOG_PATH}
+		[ "$ADD_TORRENT_DONE" = 'yes' ] && trop_torrent torrent-done-script ${srcdir}/trop_torrent_done.sh && \
+		_ 'set tr-remote --torrent-done-script successfully -' "$(date)" >>${TROP_LOG_PATH}
 		;;
 	-q)
 		shift

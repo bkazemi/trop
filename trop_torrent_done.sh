@@ -1,3 +1,3 @@
 #!/bin/sh
 
-${0%/*}/trop.sh -tdauto
+${0%/*}/trop.sh 'tdauto'

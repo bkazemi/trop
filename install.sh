@@ -5,7 +5,6 @@ set -e
 
 err () { echo "install.sh stopped - error:" "$@" ; exit 1 ;}
 
-: ${HOME:=~}
 : ${PREFIX:=${HOME}/.trop}
 
 [ -e "${PREFIX}" ] && { [ -f "${PREFIX}" ] && err 'PREFIX is a file' || \
@@ -20,9 +19,9 @@ eval $(stat -qs ${PREFIX%/*})
 [ -e ${TROP_LN_FILE}      ] && err 'TROP_LN_FILE file already exists'
 
 mkdir ${PREFIX}
-install -p -m 0550 trop.sh trop.awk        ${PREFIX} && \
-install -p -m 0640 README LICENSE trackers ${PREFIX} && \
-install -p -m 0770 tropriv.sh              ${PREFIX} || err 'failed to install files'
+install -p -m 0550 trop.sh trop.awk trop_torrent_done.sh ${PREFIX} && \
+install -p -m 0640 README LICENSE trackers               ${PREFIX} && \
+install -p -m 0770 tropriv.sh trop.conf                  ${PREFIX} || err 'failed to install files'
 
 if [ $st_uid -eq 0 ]; then
 	install -g 0 -o 0 -m 0640 trop.1 /usr/local/man/man1/ && gzip /usr/local/man/man1/trop.1 \

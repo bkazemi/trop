@@ -288,7 +288,7 @@ trop_torrent_done ()
 		done
 		case $2 in
 		rm)
-			[ "$3" = 'hard' ] && rmcmd='R' || rmcmd='remove-and-delete'
+			[ "$3" = 'hard' ] && rmcmd='remove-and-delete' || rmcmd='r'
 			echo "$1" ${rmcmd} >> ${srcdir}/.cache/tdscript
 			;;
 		stop)
@@ -306,8 +306,8 @@ trop_torrent_done ()
 		tid=$(echo $id_and_cmd | cut -f1 -d' ')
 		[ "$(trop_torrent $tid i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ] && \
 		eval trop_torrent $id_and_cmd || die 27 $tid
-		_ "successfully processed command on torrent ${tid}, removing ..." 2>>${TROP_LOG_PATH}
-		sed -Ie "${nr}d;q" ${srcdir}/.cache/tdscript
+		_l "successfully processed command on torrent ${tid}, removing ..."
+		sed -e "${nr}d;q" -I '' ${srcdir}/.cache/tdscript
 	done
 
 	return 0
@@ -510,6 +510,12 @@ _e ()
 	return 0
 }
 
+_l ()
+{
+	[ "$TROP_LOG" = 'yes' ] && \
+	_ "$@" 2>>${TROP_LOG_PATH}
+}
+
 # --------------- main --------------- #
 unset _
 PROG_NAME=${0##*/}
@@ -657,9 +663,11 @@ while [ $1 ]; do
 		exit 0
 		;;
 	-startup)
-		trop_private 2>>${TROP_LOG_PATH}
-		[ "$ADD_TORRENT_DONE" = 'yes' ] && trop_torrent torrent-done-script ${srcdir}/trop_torrent_done.sh && \
-		_ 'set tr-remote --torrent-done-script successfully -' "$(date)" >>${TROP_LOG_PATH}
+		_l 'attempting startup...'
+		trop_private 2>>${TROP_LOG_PATH:-/dev/null}
+		[ "$ADD_TORRENT_DONE" = 'yes' ] && transmission-remote $(uhc) -n "$AUTH" --torrent-done-script ${srcdir}/trop_torrent_done.sh && \
+		_l 'set tr-remote --torrent-done-script successfully -' "$(date)"
+		exit 0
 		;;
 	-q)
 		shift

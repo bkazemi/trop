@@ -37,9 +37,9 @@ EOF
 	exit 0
 }
 
-uhc ()
+hpc ()
 {
-	[ -n "$USERHOST" ] && printf -- "$USERHOST" || printf ""
+	[ -n "$HOSTPORT" ] && printf -- "$HOSTPORT" || printf ""
 
 	return 0
 }
@@ -54,13 +54,13 @@ echo_wrap ()
 
 trop_private ()
 {
-	## $1 - specify set{a,h} to set USERHOST or AUTH
-	## $2 - the user-specified USERHOST/AUTH
+	## $1 - specify set{a,h} to set HOSTPORT or AUTH
+	## $2 - the user-specified HOSTPORT/AUTH
 
 	if [ -z "$1" ]; then
 		local trout
 		[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
-		trout=$(transmission-remote $(uhc) -n "$AUTH" -st 2>&1) || \
+		trout=$(transmission-remote $(hpc) -n "$AUTH" -st 2>&1) || \
 		{ [ -n "$trout" ] && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" ; die 3 ;}
 		return 0
 	fi
@@ -77,7 +77,7 @@ trop_private ()
 
 trop_seed_list ()
 {
-	transmission-remote $(uhc) -n "$AUTH" -l 2>/dev/null | awk '$9 == "Seeding"' || die 32
+	transmission-remote $(hpc) -n "$AUTH" -l 2>/dev/null | awk '$9 == "Seeding"' || die 32
 
 	return 0
 }
@@ -166,7 +166,8 @@ trop_make_file ()
 trop_awk ()
 {
 	## $1 - AWK function to execute
-	## {$2..$n} - options to pass to AWK function
+	## $2 - options to pass to AWK function
+	## $3 - sub-option
 
 	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${1}"
 	case ${1} in
@@ -264,12 +265,12 @@ trop_torrent ()
 	if [ -n "$1" ] && [ -z "$2" ]; then
 		# if there are 3 or more chars then it is a long option
 		[ ${#1} -gt 2 ] && opt="--${1}" || opt="-${1}"
-		transmission-remote $(uhc) -n "$AUTH" ${opt} || die 1
+		transmission-remote $(hpc) -n "$AUTH" ${opt} || die 1
 		return 0
 	fi
 
 	[ ${#2} -gt 2 ] && opt="--${2}" || opt="-${2}"
-	transmission-remote $(uhc) -n "$AUTH" -t $1 $opt || die 1
+	transmission-remote $(hpc) -n "$AUTH" -t $1 $opt || die 1
 
 	return 0
 }
@@ -277,8 +278,12 @@ trop_torrent ()
 trop_torrent_done ()
 {
 	## $1 - torrent ID
-	## $2 - action to perform when torrent finishes
+	## $2..$n - action to perform when torrent finishes
 
+	# commands are formatted to be passed as arguments
+	# to trop_torrent()
+
+	[ ! -e ${srcdir}/.cache ] && mkdir ${srcdir}/.cache
 	[ ! -e ${srcdir}/.cache/tdscript ] && touch ${srcdir}/.cache/tdscript
 	if [ -n "$1" ]; then
 		[ -z "$2" ] && die 51
@@ -447,6 +452,9 @@ trop_errors ()
 		_ 'bad format' "$2"
 
 		;;
+	53)
+		_ 'no futher options should be supplied after' "$2"
+		;;
 	*)
 		_ 'error'
 		;;
@@ -512,6 +520,8 @@ _e ()
 
 _l ()
 {
+	## $@ - strings to log
+
 	[ "$TROP_LOG" = 'yes' ] && \
 	_ "$@" 2>>${TROP_LOG_PATH}
 }
@@ -580,7 +590,8 @@ while :; do
 	esac
 done
 
-[ $silent -eq 0 ] && [ $cte -eq 1 ] && check_tracker_errors
+[ "$CHECK_TRACKER_ERRORS" = 'yes' ] && [ $silent -eq 0 ] \
+&& [ $cte -eq 1 ] && check_tracker_errors
 
 while [ $1 ]; do
 	case $1 in
@@ -615,7 +626,10 @@ while [ $1 ]; do
 		exit 0
 		;;
 	-td|tdauto)
-		[ "$1" = 'tdauto' ] && trop_private 2>>${TROP_LOG_PATH}
+		[ "$1" = 'tdauto' ] && { [ "$ADD_TORRENT_DONE" = 'yes' ] \
+		|| _l 'tr-remote set to run --torrent-done-script,' \
+		      'but your configuration has the option disabled. Bailing.' ; exit 1 ;} \
+		&& trop_private 2>>${TROP_LOG_PATH}
 		trop_torrent_done "$2" "$3" "$4"
 		exit 0
 		;;
@@ -654,7 +668,7 @@ while [ $1 ]; do
 		test -z "$2" && die 51 "for \`-p'"
 		trop_private
 		shift
-		trout=$(transmission-remote $(uhc) -n "$AUTH" "$@" 2>&1) || \
+		trout=$(transmission-remote $(hpc) -n "$AUTH" "$@" 2>&1) || \
 		{ [ -n "$trout" ] && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" ; die 1 ;}
 		[ -n "$trout" ] && echo "$trout"
 		echo "$@" | grep -qE '^(-a)|(-add)' && [ "$ADD_TORRENT_DONE" = 'yes' ] && \
@@ -665,7 +679,8 @@ while [ $1 ]; do
 	-startup)
 		_l 'attempting startup...'
 		trop_private 2>>${TROP_LOG_PATH:-/dev/null}
-		[ "$ADD_TORRENT_DONE" = 'yes' ] && transmission-remote $(uhc) -n "$AUTH" --torrent-done-script ${srcdir}/trop_torrent_done.sh && \
+		[ "$ADD_TORRENT_DONE" = 'yes' ] && \
+		transmission-remote $(hpc) -n "$AUTH" --torrent-done-script ${srcdir}/trop_torrent_done.sh && \
 		_l 'set tr-remote --torrent-done-script successfully -' "$(date)"
 		exit 0
 		;;

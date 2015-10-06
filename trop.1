@@ -1,4 +1,4 @@
-.Dd September 25, 2015
+.Dd October 5, 2015
 .Dt TROP 1
 .Os
 .Sh NAME
@@ -63,7 +63,7 @@ or
 .Ar PORT
 options separately, or both with the colon format.
 You may NOT separate them with a space.
-The default may be set in the USERHOST variable in the
+The default may be set in the HOSTPORT variable in the
 .Pa tropriv.sh
 file.
 .It Fl a Ar USER:PASS
@@ -135,7 +135,7 @@ Show the name, ID, location and error field of torrents that show signs of an er
 .Nm
 will warn the user if it detects a torrent error.
 .It Fl startup
-Initalize
+Initialize
 .Nm
 defaults upon login. See
 .Pa README
@@ -170,7 +170,7 @@ Supply the host and authorization information on the command-line:
 .Dl "trop -h example.org:6789 -a bob:secretpass -sul"
 .Sh ENVIRONMENT
 .Bl -tag -width Fl
-.It Ev USERHOST
+.It Ev HOSTPORT
 Host that transmission-remote uses to connect to the RPC session.
 .It Ev AUTH
 Authorization information

@@ -2,7 +2,7 @@
 
 # private vars for user info
 
-# set USERHOST to the default address to connect to
+# set HOSTPORT to the default address to connect to
 # transmission-remote's default is `localhost:9091'
 #
 # set AUTH to the user+pass used to authenticate the
@@ -11,13 +11,13 @@
 
 [ $huser -eq 0 ] && \
 	# set here for default
-	USERHOST='' ; export USERHOST
+	HOSTPORT='' ; export HOSTPORT
 [ $auser -eq 0 ] && \
 	# set here for default
 	AUTH='' ; export AUTH
 
 set_uah ()
-{ USERHOST="$1" ; export USERHOST && return 0  || return 1 ;}
+{ HOSTPORT="$1" ; export HOSTPORT && return 0  || return 1 ;}
 
 set_auth ()
 { AUTH="$1" ; export AUTH && return 0 || return 1 ;}

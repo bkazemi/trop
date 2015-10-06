@@ -3,7 +3,7 @@
 # TODO: implement mass location change
 
 TROP_VERSION=\
-'trop 1.1.0
+'trop 1.1.1
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()

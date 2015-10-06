@@ -296,6 +296,7 @@ function tracker_total_details()
 								print $2
 								getline
 							}
+							break
 						}
 	} while(getline)
 }

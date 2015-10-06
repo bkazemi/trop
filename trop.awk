@@ -1,39 +1,41 @@
 # current options include:
 #   func=
-#     tm   - run tracker_match function
-#     tmo  - run tracker_match_other function
-#     tsi  - run tracker_seed_info function
-#     sul  - run seed_ulrate function
-#     tsul - run tracker_seedul function
-#     tt   - run tracker_total function
+#     tm   - run tracker_match         function
+#     tmo  - run tracker_match_other   function
+#     tsi  - run tracker_seed_info     function
+#     sul  - run seed_ulrate           function
+#     tsul - run tracker_seedul        function
+#     tt   - run tracker_total         function
 #     ttd  - run tracker_total_details function
-#     tth  - run tracker_total_hashop function
-#     ta   - run tracker_add function
-#     dli  - run dl_info function
+#     tth  - run tracker_total_hashop  function
+#     ta   - run tracker_add           function
+#     dli  - run dl_info               function
+#     ste  - run show_tracker_errors   function
 BEGIN {
 	if (!length(ARGV[1])) exit
 	if (!progname) progname = "trop.awk"
 	skip = tmerr = pickedtm = pickedtsi = pickedsul = pickedtsul = pickedtt = 0
 	for (i = 1; i < ARGC; i++) {
 		if (ARGV[i] ~ /^func=/) {
-			if (ARGV[i] ~ /tsi$/) {
+			sub(/^func=/, "", ARGV[i])
+			if (ARGV[i] == "tsi") {
 				tmerr = pickedtsi = 1
 				tracker_match(ARGV[i+1], ARGV[i+2])
 				delargs(i, i+=2)
-			} else if (ARGV[i] ~ /tsul$/) {
+			} else if (ARGV[i] == "tsul") {
 				tmerr = pickedtsul = 1
 				tracker_match(ARGV[i+1], ARGV[i+2])
 				delargs(i, i+=2)
-			} else if (ARGV[i] ~ /tt$/) {
+			} else if (ARGV[i] == "tt") {
 				tmerr = pickedtt = 1
 				tracker_match(ARGV[i+1], ARGV[i+2])
 				cachefile = ARGV[i+3]
 				delargs(i, i+=3)
-			} else if (ARGV[i] ~ /ttd$/) {
+			} else if (ARGV[i] == "ttd") {
 				tmerr = pickedttd = 1
 				tracker_match(ARGV[i+1], ARGV[i+2])
 				delargs(i, i+=2)
-			} else if (ARGV[i] ~ /tth$/) {
+			} else if (ARGV[i] == "tth") {
 				pickedtth = 1
 				c = 0
 				if ((op = ARGV[i+1]) == "check") {
@@ -41,19 +43,22 @@ BEGIN {
 					hash = ARGV[i+2]
 				}
 				delargs(i, i+=(c ? 2 : 1))
-			} else if (ARGV[i] ~ /tmo$/) {
+			} else if (ARGV[i] == "tmo") {
 				tracker_match_other(ARGV[i+1], ARGV[i+2])
 				delargs(i, i+=2)
-			} else if (ARGV[i] ~ /tm$/) {
+			} else if (ARGV[i] == "tm") {
 				exit(tracker_match(ARGV[i+1], ARGV[i+2]))
-			} else if (ARGV[i] ~ /ta$/) {
+			} else if (ARGV[i] == "ta") {
 				tracker_add(ARGV[i+1], ARGV[i+2], ARGV[i+3], ARGV[i+4])
 				delargs(i, i+=4)
 				exit 0
-			} else if (ARGV[i] ~ /sul$/) {
+			} else if (ARGV[i] == "sul") {
 				pickedsul = 1
 				delete ARGV[i]
-			} else if (ARGV[i] ~ /dli$/) {
+			} else if (ARGV[i] == "ste") {
+				pickedte = 1
+				delete ARGV[i]
+			} else if (ARGV[i] == "dli") {
 				tmerr = pickeddli = 1
 				delete ARGV[i]
 			} else {
@@ -261,7 +266,6 @@ function tracker_total_hashop()
 {
 	if (op == "check") {
 		do {
-			#if ($1 ~ /^Hash:/ && $2 == hash)
 			if ($1 == hash)
 				exit 1
 		} while (getline)
@@ -322,6 +326,21 @@ function dl_info()
 	} while (getline)
 }
 
+function show_tracker_errors()
+{
+	FS="  +"
+	do {
+		if ($2 ~ /^Name:/) {
+			print $2
+			print id
+		} else if ($2 ~ /^Id:/) {
+			id = $0
+		} else if ($2 ~ /^(Location:)|(Error:)/) {
+			print $0
+		}
+	} while (getline)
+}
+
 {
 	if (pickedtsi)
 		tracker_seed_info()
@@ -337,6 +356,8 @@ function dl_info()
 		tracker_total_hashop()
 	if (pickeddli)
 		dl_info()
+	if (pickedte)
+		show_tracker_errors()
 }
 
 END {

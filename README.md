@@ -26,9 +26,9 @@ is not guaranteed to work.
 
 To save a default host and/or user:pass combination, the tropriv.sh file was created.
 To save the host information, open tropriv.sh and enter the default you'd like to use in
-the USERHOST variable like so:
+the HOSTPORT variable like so:
 ```
-USERHOST='example.org:1234' # set here for default
+HOSTPORT='example.org:1234' # set here for default
 ```
 And likewise for the user:pass (-n switch in tr-remote)
 ```
@@ -54,6 +54,22 @@ Secondary tracker entries must contain a \`+' symbol as the first non-whitespace
 followed by a space, then the tracker entry. There may not be more than one unique tracker URL entry
 in any alias. Any number of secondary trackers may be specified. You may interactively add trackers
 through the \`-ta' flag in trop.
+
+## trop.conf - Configuration
+
+trop.conf is used to set default actions upon trop initialization. This file is simply a shell script
+with variables that trop sources to get defaults. Each variable is commented in trop.conf to show what
+it is used for.
+
+## Setting up trop upon login
+
+In order to use certain features, trop must be called with the -startup flag once when logging in.
+Where to add this depends on your login shell. For Bourne-like shells this would be \`~/.profile';
+In Zsh, it is \`~/.zprofile'. Typically you would look for your default shell in /etc/passwd.
+Once you've found out your login shell, add this to the login script:
+```
+hash trop 2>&- && trop -startup
+```
 
 ## License
 

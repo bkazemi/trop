@@ -58,7 +58,7 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
              Set the host and-or port that transmission-remote(1) will attempt
              to connect to.  You may set either the <span class="underline">HOST</span> or <span class="underline">PORT</span> options
              separately, or both with the colon format.  You may NOT separate
-             them with a space.  The default may be set in the USERHOST
+             them with a space.  The default may be set in the HOSTPORT
              variable in the <span class="underline">tropriv.sh</span> file.
 
      <span class="bold">-a</span> <span class="underline">USER:PASS</span>
@@ -111,9 +111,26 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
              valid option coupled with the tr-remote `-t' switch, however, the
              leading dash is removed.
 
+     <span class="bold">-td</span> <span class="underline">ID</span> <span class="underline">action</span>
+             Add torrent to a queue that will perform <span class="underline">action</span> when it
+             completes.  The variables ADD_TRACKER_DONE and
+             ADD_TRACKER_DONE_ACT in <span class="underline">trop.conf</span> are used to control the
+             behavior of this command.  See <span class="underline">README</span> for more information.
+             Current actions include:
+                   <span class="bold">rm</span> [<span class="underline">hard</span>]
+                   Remove torrent when done. Adding `hard' will remove files
+                   as well.
+                   <span class="bold">stop</span>
+                   Stop the torrent when done. This will halt seeding of the
+                   torrent.
+
      <span class="bold">-terr</span>   Show the name, ID, location and error field of torrents that show
              signs of an error.  <span class="bold">trop</span> will warn the user if it detects a
              torrent error.
+
+     <span class="bold">-startup</span>
+             Initialize <span class="bold">trop</span> defaults upon login. See <span class="underline">README</span> for more
+             information.
 
      <span class="bold">-q</span>      Suppress all message output from <span class="bold">trop</span>.
 
@@ -140,7 +157,7 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
            trop -h example.org:6789 -a bob:secretpass -sul
 
 <span class="bold">ENVIRONMENT</span>
-     USERHOST    Host that transmission-remote uses to connect to the RPC
+     HOSTPORT    Host that transmission-remote uses to connect to the RPC
                  session.
 
      AUTH        Authorization information transmission-remote(1) uses to
@@ -154,6 +171,7 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
 <span class="bold">FILES</span>
      <span class="underline">install.sh</span>  <span class="bold">trop</span> installation script.
      <span class="underline">trop.sh</span>     Main program script.
+     <span class="underline">trop.conf</span>   Configuration file.
      <span class="underline">tropriv.sh</span>  Used to store private user information.
      <span class="underline">trop.awk</span>    AWK script used for various <span class="bold">trop</span> procedures.
      <span class="underline">trackers</span>    Contains the tracker alias definitions.
@@ -169,7 +187,7 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
      printed in <span class="bold">-sul</span> or <span class="bold">-tul</span> may not be align correctly if multi-byte
      characters appear in the text.
 
-FreeBSD 11.0-CURRENT          September 25, 2015          FreeBSD 11.0-CURRENT
+FreeBSD 11.0-CURRENT            October 5, 2015           FreeBSD 11.0-CURRENT
 </pre>
 </body>
 </html>

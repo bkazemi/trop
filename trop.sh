@@ -3,7 +3,7 @@
 # TODO: implement mass location change
 
 TROP_VERSION=\
-'trop 1.1.1
+'trop 1.1.2
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -312,7 +312,7 @@ trop_torrent_done ()
 		[ "$(trop_torrent $tid i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ] && \
 		eval trop_torrent $id_and_cmd || ldie 27 $tid
 		_l "successfully processed command on torrent ${tid}, removing ..."
-		sed -e "${nr}d;q" -I '' ${srcdir}/.cache/tdscript
+		sed "${nr}d" -I '' ${srcdir}/.cache/tdscript
 	done
 
 	return 0
@@ -454,6 +454,10 @@ trop_errors ()
 		;;
 	53)
 		_ 'no futher options should be supplied after' "$2"
+		;;
+	54)
+		_ 'tr-remote set to run --torrent-done-script,' \
+		  'but your configuration has the option disabled. Bailing.'
 		;;
 	*)
 		_ 'error'
@@ -636,9 +640,8 @@ while [ $1 ]; do
 		exit 0
 		;;
 	-td|tdauto)
-		[ "$1" = 'tdauto' ] && { [ "$ADD_TORRENT_DONE" = 'yes' ] \
-		|| _l 'tr-remote set to run --torrent-done-script,' \
-		      'but your configuration has the option disabled. Bailing.' ; exit 1 ;} \
+		[ "$1" = 'tdauto' ] && \
+		{ [ "$ADD_TORRENT_DONE" = 'yes' ] || ldie 54 ;} \
 		&& trop_private 2>>${TROP_LOG_PATH}
 		trop_torrent_done "$2" "$3" "$4"
 		exit 0

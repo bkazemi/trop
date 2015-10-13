@@ -18,16 +18,16 @@ TROPLNCMD="ln -fs ${PREFIX}/trop.sh ${TROP_LN_FILE}"
 
 # install.sh will not create intermediate directories.
 [ ! -e ${TROP_LN_FILE%/*} ] && err 'invalid path for TROP_LN_FILE'
-{ [ -L ${TROP_LN_FILE} ] || [ -e ${TROP_LN_FILE} ] ;} && \
-{ printf 'TROP_LN_FILE file already exists. Remove? (y/n) y > ' ; \
-  read choice ; \
-  while :; do
-    case $choice in [Yy]|'') break                       ;;
-                    [Nn]) TROPLNCMD='' ; break           ;;
-                    *) printf '(y/n) y > ' ; read choice ;;
-    esac \
-  done \
-;}
+if [ -L ${TROP_LN_FILE} ] || [ -e ${TROP_LN_FILE} ]; then
+	printf 'TROP_LN_FILE file already exists. Remove? (y/n) y > '
+	read choice
+	while :; do
+		case $choice in [Yy]|'') break                       ;;
+		                [Nn]) TROPLNCMD='' ; break           ;;
+		                *) printf '(y/n) y > ' ; read choice ;;
+		esac
+	done
+fi
 
 mkdir ${PREFIX}
 install -p -m 0550 trop.sh trop.awk trop_torrent_done.sh ${PREFIX} && \

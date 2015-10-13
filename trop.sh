@@ -3,7 +3,7 @@
 # TODO: implement mass location change
 
 TROP_VERSION=\
-'trop 1.1.1
+'trop 1.1.2
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -283,7 +283,7 @@ trop_torrent_done ()
 	# commands are formatted to be passed as arguments
 	# to trop_torrent()
 
-	[ ! -e ${srcdir}/.cache ] && mkdir ${srcdir}/.cache
+	[ ! -e ${srcdir}/.cache          ] && mkdir ${srcdir}/.cache
 	[ ! -e ${srcdir}/.cache/tdscript ] && touch ${srcdir}/.cache/tdscript
 	if [ -n "$1" ]; then
 		[ -z "$2" ] && die 51
@@ -310,9 +310,9 @@ trop_torrent_done ()
 		: $((nr += 1))
 		tid=$(echo $id_and_cmd | cut -f1 -d' ')
 		[ "$(trop_torrent $tid i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ] && \
-		eval trop_torrent $id_and_cmd || die 27 $tid
+		eval trop_torrent $id_and_cmd || ldie 27 $tid
 		_l "successfully processed command on torrent ${tid}, removing ..."
-		sed -e "${nr}d;q" -I '' ${srcdir}/.cache/tdscript
+		sed "${nr}d" -I '' ${srcdir}/.cache/tdscript
 	done
 
 	return 0
@@ -408,7 +408,7 @@ trop_errors ()
 		_ 'no tracker errors detected.'
 		;;
 	26)
-		_ "WARNING: trop detected a tracker error. Use the \`-terr\' switch to show more info."
+		_ "WARNING: trop detected a tracker error. Use the \`-terr' switch to show more info."
 		;;
 	27)
 		_ 'trop_tracker_done(): failed to perform requested action on torrent' "$2"
@@ -455,6 +455,10 @@ trop_errors ()
 	53)
 		_ 'no futher options should be supplied after' "$2"
 		;;
+	54)
+		_ 'tr-remote set to run --torrent-done-script,' \
+		  'but your configuration has the option disabled. Bailing.'
+		;;
 	*)
 		_ 'error'
 		;;
@@ -468,6 +472,15 @@ die ()
 	## $1 - error code
 
 	[ -n "$1" ] && [ $silent -eq 0 ] && trop_errors $1 "$2"
+	kill -6 $toppid
+}
+
+ldie ()
+{
+	## $1 - error code
+
+	[ -n "$1" ] && [ $silent -eq 0 ] && \
+	trop_errors $1 "$2" 2>>${TROP_LOG_PATH}
 	kill -6 $toppid
 }
 
@@ -555,6 +568,7 @@ TROP_TRACKER=${srcdir}/trackers
 auser=0 huser=0 PRIVATE=0 cte=1
 . ${srcdir}/trop.conf # various user options
 [ "$TROP_LOG" = 'yes' ] && : ${TROP_LOG_PATH:=${srcdir}/trop.log}
+[ "$TROP_LOG" = 'no'  ] && TROP_LOG_PATH=/dev/null
 
 for i; do
 	case $i in
@@ -626,9 +640,8 @@ while [ $1 ]; do
 		exit 0
 		;;
 	-td|tdauto)
-		[ "$1" = 'tdauto' ] && { [ "$ADD_TORRENT_DONE" = 'yes' ] \
-		|| _l 'tr-remote set to run --torrent-done-script,' \
-		      'but your configuration has the option disabled. Bailing.' ; exit 1 ;} \
+		[ "$1" = 'tdauto' ] && \
+		{ [ "$ADD_TORRENT_DONE" = 'yes' ] || ldie 54 ;} \
 		&& trop_private 2>>${TROP_LOG_PATH}
 		trop_torrent_done "$2" "$3" "$4"
 		exit 0
@@ -678,10 +691,11 @@ while [ $1 ]; do
 		;;
 	-startup)
 		_l 'attempting startup...'
-		trop_private 2>>${TROP_LOG_PATH:-/dev/null}
+		trop_private 2>>${TROP_LOG_PATH}
 		[ "$ADD_TORRENT_DONE" = 'yes' ] && \
-		transmission-remote $(hpc) -n "$AUTH" --torrent-done-script ${srcdir}/trop_torrent_done.sh && \
-		_l 'set tr-remote --torrent-done-script successfully -' "$(date)"
+		{ transmission-remote $(hpc) -n "$AUTH" --torrent-done-script ${srcdir}/trop_torrent_done.sh 2>>${TROP_LOG_PATH} && \
+		_l 'set tr-remote --torrent-done-script successfully -' "$(date)" \
+		|| _l 'failed to set tr-remote --torrent-done-script' ;}
 		exit 0
 		;;
 	-q)

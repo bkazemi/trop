@@ -3,7 +3,7 @@
 # TODO: implement mass location change
 
 TROP_VERSION=\
-'trop 1.1.2
+'trop 1.1.3
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -312,7 +312,7 @@ trop_torrent_done ()
 		[ "$(trop_torrent $tid i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ] && \
 		eval trop_torrent $id_and_cmd || ldie 27 $tid
 		_l "successfully processed command on torrent ${tid}, removing ..."
-		sed "${nr}d" -I '' ${srcdir}/.cache/tdscript
+		sed -e "${nr}d" -I '' ${srcdir}/.cache/tdscript
 	done
 
 	return 0

@@ -1,9 +1,7 @@
 #!/bin/sh
-#
-# TODO: implement mass location change
 
 TROP_VERSION=\
-'trop 1.1.2
+'trop 1.2.0
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -16,18 +14,24 @@ usage: ${PROG_NAME} [-h host:port] [-a auth] [options]
 options:
  -h                        set host and port to connect to
  -a                        set authorization information
+
  -p                        pass flags directly to tr-remote
+
+ -m   <base> <new-base>    replace the base of a torrent's location
+
  -dl                       show information about downloading torrents
  -ns                       list number of torrents actively seeding
  -si                       show information about seeding torrents
  -sul                      list seeding torrents and their upload rates
- -ta   [tracker-alias]     add a tracker alias interactively
- -tul  <tracker-alias>     list seeding torrents and their UL rates by tracker
- -tt   <tracker-alias>     show total amount downloaded from tracker
- -ts   <tracker-alias>     list seeding torrents by tracker
+
  -t    <torrent-id> <opt>  pass tr-remote option to torrent
+ -ta   [tracker-alias]     add a tracker alias interactively
  -td   <torrent-id> <act>  have torrent perform action upon DL completion
  -terr                     show torrents that have errors
+ -ts   <tracker-alias>     list seeding torrents by tracker
+ -tt   <tracker-alias>     show total amount downloaded from tracker
+ -tul  <tracker-alias>     list seeding torrents and their UL rates by tracker
+
  -startup                  setup defaults - intended to be used when logging in
  -q                        suppress all message output
  -V                        show version information
@@ -312,7 +316,7 @@ trop_torrent_done ()
 		[ "$(trop_torrent $tid i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ] && \
 		eval trop_torrent $id_and_cmd || ldie 27 $tid
 		_l "successfully processed command on torrent ${tid}, removing ..."
-		sed "${nr}d" -I '' ${srcdir}/.cache/tdscript
+		sed -e "${nr}d" -I '' ${srcdir}/.cache/tdscript
 	done
 
 	return 0
@@ -364,9 +368,32 @@ trop_tracker_add()
 	return 0
 }
 
+trop_tracker_mv_location()
+{
+	## $1 - dir prefix to replace
+	## $2 - replacement prefix
+
+	local tid newloc
+	trop_torrent all i | awk -v prefix=${1} -v newprefix=${2} \
+	'
+		$1 == "Id:" { id = $2 }
+		$1 == "Location:" {
+			if ($2 ~ "^"prefix"/") {
+				loc = $2
+				sub("^"prefix"/", newprefix, loc)
+				print "%d %s\n", id, loc
+			}
+		}
+	' | { while read tmp; do
+	        tid=${tmp%% *} newloc=${tmp##* }                  \
+	        ( eval ${tmptrop} -p -t ${tid} --move ${newloc} ) \
+	      done                                                \
+	;} || die 200 ${tid}
+}
+
 pipe_check ()
 {
-	##	$1 - shell commands
+	## $1 - shell commands
 
 	{ \
 	local inp="$(cat /dev/stdin)"
@@ -420,6 +447,9 @@ trop_errors ()
 		_ "trop_tracker_done(): unknown action -- actions include:\n" \
 		  " rm [hard] - Remove torrent when done. Adding \`hard' will remove files as well.\n"\
 		  " stop - Stop the torrent when done. This will halt seeding of the torrent."
+		;;
+	200)
+		_ 'trop_tracker_mv_location(): failed to move torrent `' "$2" "'"
 		;;
 ## FUNC ERR END $$
 	3)
@@ -616,6 +646,13 @@ while [ $1 ]; do
 		trop_private
 		trop_torrent all i | trop_awk 'dli' || die 31
 		shift
+		;;
+	-m)
+		[ -z "$2" ] || [ -z "$3" ] && die 51 "for \`-m'"
+		trop_private
+		tmptrop="${srcdir}/trop.sh $(hpc) -a \"$AUTH\""
+		trop_tracker_mv_location $2 $3
+		shift 2
 		;;
 	-ns)
 		trop_private

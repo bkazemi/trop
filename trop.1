@@ -82,6 +82,27 @@ flags.
 No
 .Nm
 options may be supplied after this flag.
+.It Fl m Ar base new-base
+Move all the torrents whose directories start with
+.Ar base
+with
+.Ar new-base .
+This means that
+.Ar base
+is whatever the first directory is listed as stored in the Transmission session's records.
+This may be the absolute path that the torrents file(s) are stored in, or a relative path to the current working directory of where your Transmission session was invoked (generally $HOME).
+For example, the torrent with the ID 1 may have it's location stored in Transmission as `dir1/dir2'.
+Because this is not an absolute path, (ie. the path doesn't start with /') Transmission will internally append the CWD in which it was started in.
+Let's say that Transmission was started in $HOME which expands to /home/user.
+Torrent 1 will then be seen as being in $HOME/dir1/dir2, or /home/user/dir1/dir2.
+This is good when you have to move your torrents to a new user's home path, because you don't have to change the base directory of the torrents.
+But what if you do have torrents with a hardcoded $HOME, or an otherwise undesirable base path?
+If you have hundreds of hardcoded torrents whose locations have changed from /home/user/ to a different user's $HOME, /home/user2, moving each file's location in Transmission can be tedious.
+.Fl m
+was designed to move torrents like these to a new base easily.
+To aid with the example, to move all torrents whose base is stored as /home/user/ to /home/user2, the following command sequence would be used:
+.Dl trop -m /home/user /home/user2
+Now, all torrents with the base /home/user/ have been updated to point to /home/user2/.
 .It Fl dl
 Show information about downloading torrents.
 This will include torrents that are both `uploading' and `downloading' information.

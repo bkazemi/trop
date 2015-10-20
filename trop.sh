@@ -292,8 +292,7 @@ trop_torrent_done ()
 	if [ -n "$1" ]; then
 		[ -z "$2" ] && die 51
 		cat ${srcdir}/.cache/tdscript | while read tid; do
-			echo $tid | cut -f1 -d' ' | [ "$(cat -)" = "$1" ] && \
-			die 28
+			[ "${tid%% *}" = "$1" ] && die 28
 		done
 		case $2 in
 		rm)
@@ -582,15 +581,15 @@ hash transmission-remote 2>/dev/null || die 5
 # check if file used to call the script is a link or the script file itself
 # hard links will fail, so stick to sym links
 file -hb $0 | grep -q '^POSIX shell' && \
-	{ \
+	{	                                            \
 		{ eval "echo ${0} | grep -qEx '^\./{1}'" && \
-	  	  srcdir="." ;} \
-		  || \
-		{ eval "echo ${0} | grep -qEx '[^/]+'" && \
-	  	  srcdir="." ;} \
-		  || \
-		srcdir=${0%/*} \
-	;} \
+		  srcdir="." ;}                             \
+		||                                          \
+		{ eval "echo ${0} | grep -qEx '[^/]+'" &&   \
+		  srcdir="." ;}                             \
+		||                                          \
+		srcdir=${0%/*}                              \
+	;}	                                            \
 || \
 srcdir="$(echo $(file -hb $0) | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
 

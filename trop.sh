@@ -384,11 +384,11 @@ trop_tracker_mv_location()
 				print "%d %s\n", id, loc
 			}
 		}
-	' | { while read tmp; do
-	        tid=${tmp%% *} newloc=${tmp##* }                  \
-	        ( eval ${tmptrop} -p -t ${tid} --move ${newloc} ) \
-	      done                                                \
-	;} || die 200 ${tid}
+	' | while read tmp; do
+	      tid=${tmp%% *} newloc=${tmp##* }
+	      ( eval ${tmptrop} -p -t ${tid} --move ${newloc} )
+	    done
+	|| die 200 ${tid}
 }
 
 pipe_check ()

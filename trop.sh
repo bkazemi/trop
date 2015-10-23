@@ -373,12 +373,16 @@ trop_tracker_mv_location()
 	## $2 - replacement prefix
 
 	local tid newloc
-	trop_torrent all i | awk -v prefix=${1} -v newprefix=${2} \
+	trop_torrent all i | awk -v prefix="${1}" -v newprefix="${2}" \
 	'
 		$1 == "Id:" { id = $2 }
 		$1 == "Location:" {
 			if ($2 ~ "^"prefix"/") {
 				loc = $2
+				# append rest of path in case it
+				# contains spaces
+				for (i = 3; i <= NF; i++)
+					loc=loc" "$i # space is FS
 				sub("^"prefix"/", newprefix, loc)
 				print "%d %s\n", id, loc
 			}
@@ -386,7 +390,7 @@ trop_tracker_mv_location()
 	' | while read tmp; do
 	      tid=${tmp%% *} newloc=${tmp##* }
 	      ( eval ${tmptrop} -p -t ${tid} --move ${newloc} )
-	    done
+	    done \
 	|| die 200 ${tid}
 }
 
@@ -517,6 +521,7 @@ check_tracker_errors ()
 {
 	## $1 - silence warning
 
+	set +e
 	trop_private
 	trop_torrent l | awk '
 		$1 ~ /\*/ {
@@ -647,10 +652,13 @@ while [ $1 ]; do
 		shift
 		;;
 	-m)
-		[ -z "$2" ] || [ -z "$3" ] && die 51 "for \`-m'"
+		[ -z "$2" ] && die 51 "for \`-m'"
+		two=${2}
+		echo $2 | grep -qE '/$' && two=${2%*/}
 		trop_private
-		tmptrop="${srcdir}/trop.sh $(hpc) -a \"$AUTH\""
-		trop_tracker_mv_location $2 $3
+		tmptrop="${srcdir}/trop.sh $(hpc) -a '$AUTH'"
+		trop_tracker_mv_location "$two" "$3"
+		unset two
 		shift 2
 		;;
 	-ns)

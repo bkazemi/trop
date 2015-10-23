@@ -1,9 +1,7 @@
 #!/bin/sh
-#
-# TODO: implement mass location change
 
 TROP_VERSION=\
-'trop 1.1.3
+'trop 1.2.0
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -14,20 +12,28 @@ trop.sh - transmission-remote operations
 usage: ${PROG_NAME} [-h host:port] [-a auth] [options]
 
 options:
- -h                        set host and port to connect to
- -a                        set authorization information
+ -h   <host:port>          set host and port to connect to
+      | <host> | <port>
+ -a   <user:pw>            set authorization information
+
  -p                        pass flags directly to tr-remote
+
+ -m   <base> [new-base]    replace the base in the location of any matching
+                           torrents
+
  -dl                       show information about downloading torrents
  -ns                       list number of torrents actively seeding
  -si                       show information about seeding torrents
  -sul                      list seeding torrents and their upload rates
- -ta   [tracker-alias]     add a tracker alias interactively
- -tul  <tracker-alias>     list seeding torrents and their UL rates by tracker
- -tt   <tracker-alias>     show total amount downloaded from tracker
- -ts   <tracker-alias>     list seeding torrents by tracker
+
  -t    <torrent-id> <opt>  pass tr-remote option to torrent
+ -ta   [tracker-alias]     add a tracker alias interactively
  -td   <torrent-id> <act>  have torrent perform action upon DL completion
  -terr                     show torrents that have errors
+ -ts   <tracker-alias>     list seeding torrents by tracker
+ -tt   <tracker-alias>     show total amount downloaded from tracker
+ -tul  <tracker-alias>     list seeding torrents and their UL rates by tracker
+
  -startup                  setup defaults - intended to be used when logging in
  -q                        suppress all message output
  -V                        show version information
@@ -50,6 +56,12 @@ echo_wrap ()
 	[ $silent -eq 0 ] && echo "$@" >&2
 
 	return 0
+}
+
+printf_wrap ()
+{
+	# in case printf is used to display anything to user
+	[ $silent -eq 0 ] && printf "$@" >&2
 }
 
 trop_private ()
@@ -288,8 +300,7 @@ trop_torrent_done ()
 	if [ -n "$1" ]; then
 		[ -z "$2" ] && die 51
 		cat ${srcdir}/.cache/tdscript | while read tid; do
-			echo $tid | cut -f1 -d' ' | [ "$(cat -)" = "$1" ] && \
-			die 28
+			[ "${tid%% *}" = "$1" ] && die 28
 		done
 		case $2 in
 		rm)
@@ -364,9 +375,41 @@ trop_tracker_add()
 	return 0
 }
 
+trop_tracker_mv_location()
+{
+	## $1 - dir prefix to replace
+	## $2 - replacement prefix
+
+	local tid newloc numt=0
+	trop_torrent all i | awk -v prefix="${1}" -v newprefix="${2}" \
+	'
+		$1 == "Id:" { id = $2 }
+		$1 == "Location:" {
+			if ($2 ~ "^"prefix"/") {
+				loc = $2
+				# append rest of path in case it
+				# contains spaces
+				for (i = 3; i <= NF; i++)
+					loc=loc" "$i # space is FS
+				sub("^"prefix"/", newprefix, loc)
+				printf "%d %s\n", id, loc
+			}
+		}
+	' | while read tmp; do
+	      tid=${tmp%% *} newloc=$(echo $tmp | sed -E 's/^[^ ]+ //')
+	      eval ${tmptrop} -p -t ${tid} --move ${newloc} >/dev/null \
+	      && : $((numt += 1)) \
+	      && printf_wrap "successfully moved ${numt} torrents\r"
+	    done \
+	|| die 200 ${tid}
+	echo # newline
+
+	return 0
+}
+
 pipe_check ()
 {
-	##	$1 - shell commands
+	## $1 - shell commands
 
 	{ \
 	local inp="$(cat /dev/stdin)"
@@ -420,6 +463,9 @@ trop_errors ()
 		_ "trop_tracker_done(): unknown action -- actions include:\n" \
 		  " rm [hard] - Remove torrent when done. Adding \`hard' will remove files as well.\n"\
 		  " stop - Stop the torrent when done. This will halt seeding of the torrent."
+		;;
+	200)
+		_ 'trop_tracker_mv_location(): failed to move torrent `' "$2" "'"
 		;;
 ## FUNC ERR END $$
 	3)
@@ -488,6 +534,7 @@ check_tracker_errors ()
 {
 	## $1 - silence warning
 
+	set +e
 	trop_private
 	trop_torrent l | awk '
 		$1 ~ /\*/ {
@@ -537,6 +584,8 @@ _l ()
 
 	[ "$TROP_LOG" = 'yes' ] && \
 	_ "$@" 2>>${TROP_LOG_PATH}
+
+	return 0
 }
 
 # --------------- main --------------- #
@@ -552,15 +601,15 @@ hash transmission-remote 2>/dev/null || die 5
 # check if file used to call the script is a link or the script file itself
 # hard links will fail, so stick to sym links
 file -hb $0 | grep -q '^POSIX shell' && \
-	{ \
+	{	                                            \
 		{ eval "echo ${0} | grep -qEx '^\./{1}'" && \
-	  	  srcdir="." ;} \
-		  || \
-		{ eval "echo ${0} | grep -qEx '[^/]+'" && \
-	  	  srcdir="." ;} \
-		  || \
-		srcdir=${0%/*} \
-	;} \
+		  srcdir="." ;}                             \
+		||                                          \
+		{ eval "echo ${0} | grep -qEx '[^/]+'" &&   \
+		  srcdir="." ;}                             \
+		||                                          \
+		srcdir=${0%/*}                              \
+	;}	                                            \
 || \
 srcdir="$(echo $(file -hb $0) | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
 
@@ -616,6 +665,16 @@ while [ $1 ]; do
 		trop_private
 		trop_torrent all i | trop_awk 'dli' || die 31
 		shift
+		;;
+	-m)
+		[ -z "$2" ] && die 51 "for \`-m'"
+		two=${2}
+		echo $2 | grep -qE '/$' && two=${2%*/}
+		trop_private
+		tmptrop="${srcdir}/trop.sh $(hpc) -a '$AUTH'"
+		trop_tracker_mv_location "$two" "$3"
+		unset two
+		test -n "$3" && shift 3 || shift 2
 		;;
 	-ns)
 		trop_private

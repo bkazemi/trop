@@ -538,12 +538,14 @@ check_tracker_errors ()
 {
 	## $1 - silence warning
 
-	set +e
 	trop_private
 	trop_torrent l | awk '
+		BEGIN { ret = 0 }
 		$1 ~ /\*/ {
-			exit 1
+			if (!ret)
+				ret=1
 		}
+		END { exit ret }
 	' && return 1 || { [ -z "$1" ] && _e 26 ;}
 
 	return 0
@@ -599,7 +601,7 @@ PROG_NAME=${0##*/}
 LC_ALL=POSIX
 toppid=$$
 silent=0
-trap 'set -e ; exit 1' 6
+trap 'exit 1' 6
 hash transmission-remote 2>/dev/null || die 5
 
 # check if file used to call the script is a link or the script file itself

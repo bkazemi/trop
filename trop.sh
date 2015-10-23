@@ -12,12 +12,14 @@ trop.sh - transmission-remote operations
 usage: ${PROG_NAME} [-h host:port] [-a auth] [options]
 
 options:
- -h                        set host and port to connect to
- -a                        set authorization information
+ -h   <host:port>          set host and port to connect to
+      | <host> | <port>
+ -a   <user:pw>            set authorization information
 
  -p                        pass flags directly to tr-remote
 
- -m   <base> <new-base>    replace the base of a torrent's location
+ -m   <base> [new-base]    replace the base in the location of any matching
+                           torrents
 
  -dl                       show information about downloading torrents
  -ns                       list number of torrents actively seeding
@@ -54,6 +56,12 @@ echo_wrap ()
 	[ $silent -eq 0 ] && echo "$@" >&2
 
 	return 0
+}
+
+printf_wrap ()
+{
+	# in case printf is used to display anything to user
+	[ $silent -eq 0 ] && printf "$@" >&2
 }
 
 trop_private ()
@@ -372,7 +380,7 @@ trop_tracker_mv_location()
 	## $1 - dir prefix to replace
 	## $2 - replacement prefix
 
-	local tid newloc
+	local tid newloc numt=0
 	trop_torrent all i | awk -v prefix="${1}" -v newprefix="${2}" \
 	'
 		$1 == "Id:" { id = $2 }
@@ -384,14 +392,19 @@ trop_tracker_mv_location()
 				for (i = 3; i <= NF; i++)
 					loc=loc" "$i # space is FS
 				sub("^"prefix"/", newprefix, loc)
-				print "%d %s\n", id, loc
+				printf "%d %s\n", id, loc
 			}
 		}
 	' | while read tmp; do
-	      tid=${tmp%% *} newloc=${tmp##* }
-	      ( eval ${tmptrop} -p -t ${tid} --move ${newloc} )
+	      tid=${tmp%% *} newloc=$(echo $tmp | sed -E 's/^[^ ]+ //')
+	      eval ${tmptrop} -p -t ${tid} --move ${newloc} >/dev/null \
+	      && : $((numt += 1)) \
+	      && printf_wrap "successfully moved ${numt} torrents\r"
 	    done \
 	|| die 200 ${tid}
+	echo # newline
+
+	return 0
 }
 
 pipe_check ()
@@ -571,6 +584,8 @@ _l ()
 
 	[ "$TROP_LOG" = 'yes' ] && \
 	_ "$@" 2>>${TROP_LOG_PATH}
+
+	return 0
 }
 
 # --------------- main --------------- #
@@ -659,7 +674,7 @@ while [ $1 ]; do
 		tmptrop="${srcdir}/trop.sh $(hpc) -a '$AUTH'"
 		trop_tracker_mv_location "$two" "$3"
 		unset two
-		shift 2
+		test -n "$3" && shift 3 || shift 2
 		;;
 	-ns)
 		trop_private

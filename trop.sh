@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.2.0
+'trop 1.2.1
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -383,15 +383,19 @@ trop_tracker_mv_location()
 	local tid newloc numt=0
 	trop_torrent all i | awk -v prefix="${1}" -v newprefix="${2}" \
 	'
+		BEGIN {
+			if (newprefix && newprefix !~ /\/$/)
+				newprefix = newprefix"/"
+		}
 		$1 == "Id:" { id = $2 }
 		$1 == "Location:" {
-			if ($2 ~ "^"prefix"/") {
+			if ($2 ~ "^"prefix"/?") {
 				loc = $2
 				# append rest of path in case it
 				# contains spaces
 				for (i = 3; i <= NF; i++)
 					loc=loc" "$i # space is FS
-				sub("^"prefix"/", newprefix, loc)
+				sub("^"prefix"/?", newprefix, loc)
 				printf "%d %s\n", id, loc
 			}
 		}

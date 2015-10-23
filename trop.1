@@ -96,8 +96,8 @@ Because this is not an absolute path, (ie. the path doesn't start with `/') Tran
 Let's say that Transmission was started in $HOME which expands to /home/user.
 Torrent 1 will then be seen as being in $HOME/dir1/dir2, or /home/user/dir1/dir2.
 This is good when you have to move your torrents to a new user's home path, because you don't have to change the base directory of the torrents.
-But what if you do have torrents with a hardcoded $HOME, or an otherwise undesirable base path?
-If you have hundreds of hardcoded torrents whose locations have changed from /home/user/ to a different user's $HOME, /home/user2, moving each file's location in Transmission can be tedious.
+But what if you do have torrents with a hard-coded $HOME, or an otherwise undesirable base path?
+If you have hundreds of hard-coded torrents whose locations have changed from /home/user/ to a different user's $HOME, /home/user2, moving each file's location in Transmission can be tedious.
 .Fl m
 was designed to move torrents like these to a new base easily.
 To aid with the example, to move all torrents whose base is stored as /home/user/ to /home/user2, the following command sequence would be used:
@@ -108,6 +108,7 @@ If you omit
 all matching torrents'
 .Ar base
 will be stripped from their location.
+One important thing to note is that currently if you attempt to remove the base and the resulting relative path is still the same Transmission will _not_ update it to the relative path. However, once you do move the base, you can strip it to a relative path and not have to fuss if you move bases again.
 .It Fl dl
 Show information about downloading torrents.
 This will include torrents that are both `uploading' and `downloading' information.

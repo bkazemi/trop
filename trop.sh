@@ -380,6 +380,12 @@ trop_tracker_mv_location()
 	## $1 - dir prefix to replace
 	## $2 - replacement prefix
 
+	# XXX assuming tr session was started in $HOME
+	if [ "${HOSTPORT%%:*}" = 'localhost' ] || [ "${HOSTPORT%%:*}" = '127.0.0.1' ] \
+	   || [ -z "${HOSTPORT}" ]; then
+		[ "X$(file -hb ${HOME}/${1} | sed -E 's/^symbolic link to //i' 2>/dev/null)" \
+		  = "X${2}" ] && die 201
+	fi
 	local tid newloc numt=0
 	trop_torrent all i | awk -v prefix="${1}" -v newprefix="${2}" \
 	'
@@ -472,6 +478,10 @@ trop_errors ()
 		;;
 	200)
 		_ 'trop_tracker_mv_location(): failed to move torrent `' "$2" "'"
+		;;
+	201)
+		_ "Transmission currently won't change the location if the current one is a symbolic link\n"\
+		  "to the replacement base or if the relative path is the same. Bailing."
 		;;
 ## FUNC ERR END $$
 	3)

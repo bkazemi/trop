@@ -410,8 +410,7 @@ trop_tracker_mv_location()
 	' | while read tmp; do
 	      tid=${tmp%% *} newloc=$(echo $tmp | sed -E 's/^[^ ]+ //')
 	      eval ${tmptrop} -p -t ${tid} --move "${newloc}" >/dev/null \
-	      && : $((numt += 1)) \
-	      && printf_wrap "successfully moved ${numt} torrents\r"
+	      && printf_wrap "successfully moved $((numt += 1)) torrents\r"
 	    done \
 	|| die 200 ${tid}
 	echo # newline

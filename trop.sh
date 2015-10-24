@@ -386,6 +386,8 @@ trop_tracker_mv_location()
 		BEGIN {
 			if (newprefix && newprefix !~ /\/$/)
 				newprefix = newprefix"/"
+			# `&` produces bizarre results without a backslash
+			gsub(/\&/, "\\\\&", newprefix)
 		}
 		$1 == "Id:" { id = $2 }
 		$1 == "Location:" {
@@ -401,7 +403,7 @@ trop_tracker_mv_location()
 		}
 	' | while read tmp; do
 	      tid=${tmp%% *} newloc=$(echo $tmp | sed -E 's/^[^ ]+ //')
-	      eval ${tmptrop} -p -t ${tid} --move ${newloc} >/dev/null \
+	      eval ${tmptrop} -p -t ${tid} --move "${newloc}" >/dev/null \
 	      && : $((numt += 1)) \
 	      && printf_wrap "successfully moved ${numt} torrents\r"
 	    done \

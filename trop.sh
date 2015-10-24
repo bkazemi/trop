@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.2.2
+'trop 1.2.3
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -380,12 +380,20 @@ trop_tracker_mv_location()
 	## $1 - dir prefix to replace
 	## $2 - replacement prefix
 
+	# XXX assuming tr session was started in $HOME
+	if [ "${HOSTPORT%%:*}" = 'localhost' ] || [ "${HOSTPORT%%:*}" = '127.0.0.1' ] \
+	   || [ -z "${HOSTPORT}" ]; then
+		[ "X$(file -hb ${HOME}/${1} | sed -E 's/^symbolic link to //i' 2>/dev/null)" \
+		  = "X${2}" ] && die 201
+	fi
 	local tid newloc numt=0
 	trop_torrent all i | awk -v prefix="${1}" -v newprefix="${2}" \
 	'
 		BEGIN {
 			if (newprefix && newprefix !~ /\/$/)
 				newprefix = newprefix"/"
+			# `&` produces bizarre results without a backslash
+			gsub(/\&/, "\\\\&", newprefix)
 		}
 		$1 == "Id:" { id = $2 }
 		$1 == "Location:" {
@@ -401,9 +409,8 @@ trop_tracker_mv_location()
 		}
 	' | while read tmp; do
 	      tid=${tmp%% *} newloc=$(echo $tmp | sed -E 's/^[^ ]+ //')
-	      eval ${tmptrop} -p -t ${tid} --move ${newloc} >/dev/null \
-	      && : $((numt += 1)) \
-	      && printf_wrap "successfully moved ${numt} torrents\r"
+	      eval ${tmptrop} -p -t ${tid} --move "${newloc}" >/dev/null \
+	      && printf_wrap "successfully moved $((numt += 1)) torrents\r"
 	    done \
 	|| die 200 ${tid}
 	echo # newline
@@ -470,6 +477,10 @@ trop_errors ()
 		;;
 	200)
 		_ 'trop_tracker_mv_location(): failed to move torrent `' "$2" "'"
+		;;
+	201)
+		_ "Transmission currently won't change the location if the current one is a symbolic link\n"\
+		  "to the replacement base or if the relative path is the same. Bailing."
 		;;
 ## FUNC ERR END $$
 	3)

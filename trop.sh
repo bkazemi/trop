@@ -62,6 +62,8 @@ printf_wrap ()
 {
 	# in case printf is used to display anything to user
 	[ $silent -eq 0 ] && printf "$@" >&2
+
+	return 0
 }
 
 trop_private ()
@@ -178,28 +180,29 @@ trop_make_file ()
 trop_awk ()
 {
 	## $1 - AWK function to execute
-	## $2 - options to pass to AWK function
-	## $3 - sub-option
+	## $2..$n - options to pass to AWK function
 
-	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${1}"
-	case ${1} in
+	local func=${1} ; shift
+	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${func}"
+	case ${func} in
 	ta)
-		${awkopt} ${2} ${TROP_TRACKER} ${3} "${4}" || return 31
+		${awkopt} $2 $3 "$4" ${TROP_TRACKER} || return 31
 		;;
 	tth)
 		local thash=
 		[ -n "$4" ] && thash="${srcdir}/.cache/${4}_thash"
-		${awkopt} ${2} ${3} ${thash} || return 31
+		${awkopt} "$@" ${thash} || return 31
 		;;
 	t*)
 		[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
 		[ -z $2 ] && return 41 # no alias
-		awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname="trop.awk" func=tm ${2} ${TROP_TRACKER} \
-		|| return 42 # alias not found
-		${awkopt} ${2} ${TROP_TRACKER} ${3} || return 31 # trop.awk failed
+		local tmp=${func} ; func='tm'
+		${awkopt} ${2} ${TROP_TRACKER} || return 42 # alias not found
+		func=${tmp}
+		${awkopt} "$@" ${TROP_TRACKER} || return 31 # trop.awk failed
 		;;
 	*)
-		${awkopt} || return 31
+		${awkopt} "$@" || return 31
 		;;
 	esac
 
@@ -375,7 +378,7 @@ trop_tracker_add()
 	return 0
 }
 
-trop_tracker_mv_location()
+trop_mv_torrent_location()
 {
 	## $1 - dir prefix to replace
 	## $2 - replacement prefix
@@ -387,27 +390,8 @@ trop_tracker_mv_location()
 		  = "X${2}" ] && die 201
 	fi
 	local tid newloc numt=0
-	trop_torrent all i | awk -v prefix="${1}" -v newprefix="${2}" \
-	'
-		BEGIN {
-			if (newprefix && newprefix !~ /\/$/)
-				newprefix = newprefix"/"
-			# `&` produces bizarre results without a backslash
-			gsub(/\&/, "\\\\&", newprefix)
-		}
-		$1 == "Id:" { id = $2 }
-		$1 == "Location:" {
-			if ($2 ~ "^"prefix"/?") {
-				loc = $2
-				# append rest of path in case it
-				# contains spaces
-				for (i = 3; i <= NF; i++)
-					loc=loc" "$i # space is FS
-				sub("^"prefix"/?", newprefix, loc)
-				printf "%d %s\n", id, loc
-			}
-		}
-	' | while read tmp; do
+	trop_torrent all i | trop_awk 'mtl' "$1" "$2" \
+	| while read tmp; do
 	      tid=${tmp%% *} newloc=$(echo $tmp | sed -E 's/^[^ ]+ //')
 	      eval ${tmptrop} -p -t ${tid} --move "${newloc}" >/dev/null \
 	      && printf_wrap "successfully moved $((numt += 1)) torrents\r"
@@ -476,7 +460,7 @@ trop_errors ()
 		  " stop - Stop the torrent when done. This will halt seeding of the torrent."
 		;;
 	200)
-		_ 'trop_tracker_mv_location(): failed to move torrent `' "$2" "'"
+		_ 'trop_mv_torrent_location(): failed to move torrent `' "$2" "'"
 		;;
 	201)
 		_ "Transmission currently won't change the location if the current one is a symbolic link\n"\
@@ -689,7 +673,7 @@ while [ $1 ]; do
 		echo $2 | grep -qE '/$' && two=${2%*/}
 		trop_private
 		tmptrop="${srcdir}/trop.sh $(hpc) -a '$AUTH'"
-		trop_tracker_mv_location "$two" "$3"
+		trop_mv_torrent_location "$two" "$3"
 		unset two
 		test -n "$3" && shift 3 || shift 2
 		;;

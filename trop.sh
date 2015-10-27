@@ -29,6 +29,8 @@ options:
  -t    <torrent-id> <opt>  pass tr-remote option to torrent
  -ta   [tracker-alias]     add a tracker alias interactively
  -td   <torrent-id> <act>  have torrent perform action upon DL completion
+ -notd                     stop torrent from being added to the torrent-done
+                           queue if torrents are automatically being added
  -terr                     show torrents that have errors
  -ts   <tracker-alias>     list seeding torrents by tracker
  -tt   <tracker-alias>     show total amount downloaded from tracker
@@ -420,6 +422,8 @@ pipe_check ()
 trop_errors ()
 {
 	## $1 - error code
+	## $2 - error-specific information
+	##      to concat with the error msg
 
 	case ${1} in
 	1)
@@ -504,9 +508,25 @@ trop_errors ()
 		_ 'tr-remote set to run --torrent-done-script,' \
 		  'but your configuration has the option disabled. Bailing.'
 		;;
+	55)
+		_ 'trop depends on' "$2" "but couldn't find it. Bailing."
+		;;
 	*)
 		_ 'error'
 		;;
+	esac
+
+	return 0
+}
+
+trop_dep ()
+{
+	## $1 - cmd-name of trop dependency
+
+	case ${1} in
+	diff)
+		# trop depends on GNU diff options
+		diff --version 2>&1 | sed 1q | grep -q 'GNU' || return 1
 	esac
 
 	return 0
@@ -632,6 +652,8 @@ for i; do
 		echo "$TROP_VERSION" ; exit 0 ;;
 	-terr|-ta|-td|tdauto|-startup)
 		cte=0 ;;
+	-notd)
+		ADD_TORRENT_DONE='no'
 	esac
 done
 
@@ -717,6 +739,7 @@ while [ $1 ]; do
 		shift 2
 		;;
 	-tt)
+		trop_dep 'diff' || die 55 'GNU diff'
 		trop_private
 		trop_tracker_total $2
 		shift 2

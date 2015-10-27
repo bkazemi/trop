@@ -1,16 +1,17 @@
 # current options include:
 #   func=
-#     tm   - run tracker_match         function
-#     tmo  - run tracker_match_other   function
-#     tsi  - run tracker_seed_info     function
-#     sul  - run seed_ulrate           function
-#     tsul - run tracker_seedul        function
-#     tt   - run tracker_total         function
-#     ttd  - run tracker_total_details function
-#     tth  - run tracker_total_hashop  function
-#     ta   - run tracker_add           function
-#     dli  - run dl_info               function
-#     ste  - run show_tracker_errors   function
+#     tm   - run tracker_match
+#     tmo  - run tracker_match_other
+#     tsi  - run tracker_seed_info
+#     sul  - run seed_ulrate
+#     tsul - run tracker_seedul
+#     tt   - run tracker_total
+#     ttd  - run tracker_total_details
+#     tth  - run tracker_total_hashop
+#     ta   - run tracker_add
+#     dli  - run dl_info
+#     ste  - run show_tracker_errors
+#     mtl  - run move_torrent_location
 BEGIN {
 	if (!length(ARGV[1])) exit
 	if (!progname) progname = "trop.awk"

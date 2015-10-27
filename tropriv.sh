@@ -11,10 +11,10 @@
 
 [ $huser -eq 0 ] && \
 	# set here for default
-	HOSTPORT='' ; export HOSTPORT
+	{ HOSTPORT='' ; export HOSTPORT ;}
 [ $auser -eq 0 ] && \
 	# set here for default
-	AUTH='' ; export AUTH
+	{ AUTH='' ; export AUTH ;}
 
 set_uah ()
 { HOSTPORT="$1" ; export HOSTPORT && return 0  || return 1 ;}

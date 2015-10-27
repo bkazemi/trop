@@ -393,9 +393,9 @@ trop_mv_torrent_location()
 	trop_torrent all i | trop_awk 'mtl' "$1" "$2" \
 	| while read tmp; do
 	      tid=${tmp%% *} newloc=$(echo $tmp | sed -E 's/^[^ ]+ //')
-	      eval ${tmptrop} -p -t ${tid} --move "${newloc}" >/dev/null \
+	      eval ${tmptr} -t ${tid} --move "${newloc}" >/dev/null \
 	      && printf_wrap "successfully moved $((numt += 1)) torrents\r"
-	    done \
+	done \
 	|| die 200 ${tid}
 	echo # newline
 
@@ -672,9 +672,9 @@ while [ $1 ]; do
 		two=${2}
 		echo $2 | grep -qE '/$' && two=${2%*/}
 		trop_private
-		tmptrop="${srcdir}/trop.sh $(hpc) -a '$AUTH'"
+		tmptr="transmission-remote $(hpc) -n \"$AUTH\""
 		trop_mv_torrent_location "$two" "$3"
-		unset two
+		unset two tmptr
 		test -n "$3" && shift 3 || shift 2
 		;;
 	-ns)

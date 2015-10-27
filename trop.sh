@@ -328,7 +328,7 @@ trop_torrent_done ()
 		[ "$(trop_torrent $tid i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ] && \
 		eval trop_torrent $id_and_cmd || ldie 27 $tid
 		_l "successfully processed command on torrent ${tid}, removing ..."
-		sed -e "${nr}d" -I '' ${srcdir}/.cache/tdscript
+		sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
 	done
 
 	return 0
@@ -388,13 +388,13 @@ trop_mv_torrent_location()
 	# XXX assuming tr session was started in $HOME
 	if [ "${HOSTPORT%%:*}" = 'localhost' ] || [ "${HOSTPORT%%:*}" = '127.0.0.1' ] \
 	   || [ -z "${HOSTPORT}" ]; then
-		[ "X$(file -hb ${HOME}/${1} | sed -E 's/^symbolic link to //i' 2>/dev/null)" \
+		[ "X$(file -hb ${HOME}/${1} | sed -r 's/^symbolic link to //i' 2>/dev/null)" \
 		  = "X${2}" ] && die 201
 	fi
 	local tid newloc numt=0
 	trop_torrent all i | trop_awk 'mtl' "$1" "$2" \
 	| while read tmp; do
-	      tid=${tmp%% *} newloc=$(echo $tmp | sed -E 's/^[^ ]+ //')
+	      tid=${tmp%% *} newloc=$(echo $tmp | sed -r 's/^[^ ]+ //')
 	      eval ${tmptr} -t ${tid} --move "${newloc}" >/dev/null \
 	      && printf_wrap "successfully moved $((numt += 1)) torrents\r"
 	done \
@@ -614,6 +614,7 @@ unset _
 PROG_NAME=${0##*/}
 [ $# -eq 0 ] && usage
 LC_ALL=POSIX
+POSIXLY_CORRECT=1
 toppid=$$
 silent=0
 trap 'exit 1' 6
@@ -632,7 +633,7 @@ file -hb $0 | grep -q '^POSIX shell' && \
 		srcdir=${0%/*}                              \
 	;}	                                            \
 || \
-srcdir="$(echo $(file -hb $0) | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
+srcdir="$(echo $(file -hb $0) | sed -r -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
 
 TROP_TRACKER=${srcdir}/trackers
 auser=0 huser=0 PRIVATE=0 cte=1

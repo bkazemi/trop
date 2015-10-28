@@ -102,6 +102,15 @@ function err(msg)
 	exit 1
 }
 
+function tracker_is_valid(trackerarr)
+{
+	for (i in trackerarr)
+		if (trackerarr[i] !~ /([[:alnum:]]+:\/\/)?([[:alnum:]]+\.[[:alpha:]]+)+/)
+			err("`"trackerarr[i]"' doesn't look like a proper URL!")
+
+	return
+}
+
 function tracker_match(alias, tfile)
 {
 	if (!alias)
@@ -135,6 +144,7 @@ function tracker_get_all(tfile)
 		else if ($2 == ":")
 			everyt[idx++] = $3
 	}
+
 	return
 }
 
@@ -158,21 +168,27 @@ function tracker_add(alias, prim, sec, tfile)
 {
 	if (!alias || !prim || !sec)
 		err("You entered an empty string!")
-	split(sec, secarr)
-	for (i in secarr) {
-		if (secarr[i] == prim)
-			err("tracker `"prim"' entered more than once")
-		# I don't believe {} is portable...
-		if (sec ~ " *""("secarr[i]")"" *""("secarr[i]")"" *")
-			err("tracker `"secarr[i]"' entered more than once")
+	if (sec == "_NULL") sec = 0
+	tmparr[0] = prim
+	tracker_is_valid(tmparr)
+	if (sec) {
+		split(sec, secarr)
+		tracker_is_valid(secarr)
+		for (i in secarr) {
+			if (secarr[i] == prim)
+				err("tracker `"prim"' entered more than once")
+			# I don't believe {} is portable...
+			if (sec ~ " *""("secarr[i]")"" *""("secarr[i]")"" *")
+				err("tracker `"secarr[i]"' entered more than once")
+		}
 	}
 	# since split idx starts at one, use 0 for
 	# primary tracker
 	secarr[0] = prim
-	tracker_match_other(alias, tfile, secarr)
+	tracker_match_other(alias, secarr, tfile)
 	delete secarr[0]
 	print alias" : "prim >> tfile
-	if (sec != "NULL")
+	if (sec)
 		for (i in secarr)
 			printf "\t+ "secarr[i]"\n" >> tfile
 

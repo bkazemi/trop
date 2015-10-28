@@ -188,18 +188,18 @@ trop_awk ()
 	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${func}"
 	case ${func} in
 	ta)
-		${awkopt} $2 $3 "$4" ${TROP_TRACKER} || return 31
+		${awkopt} $1 $2 "$3" ${TROP_TRACKER} || return 31
 		;;
 	tth)
 		local thash=
-		[ -n "$4" ] && thash="${srcdir}/.cache/${4}_thash"
+		[ -n "$3" ] && thash="${srcdir}/.cache/${3}_thash"
 		${awkopt} "$@" ${thash} || return 31
 		;;
 	t*)
 		[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
-		[ -z $2 ] && return 41 # no alias
+		[ -z $1 ] && return 41 # no alias
 		local tmp=${func} ; func='tm'
-		${awkopt} ${2} ${TROP_TRACKER} || return 42 # alias not found
+		${awkopt} ${1} ${TROP_TRACKER} || return 0 # alias not found, awk reports
 		func=${tmp}
 		${awkopt} "$@" ${TROP_TRACKER} || return 31 # trop.awk failed
 		;;
@@ -366,7 +366,7 @@ trop_tracker_add()
 			;;
 		esac
 	done
-	[ ! $numt ] && numt=0 st='NULL'
+	[ ! $numt ] && numt=0 st='_NULL'
 	local i=1
 	while [ $i -le $numt ]; do
 		printf "enter tracker #%d > " "$i"
@@ -654,7 +654,7 @@ for i; do
 	-terr|-ta|-td|tdauto|-startup)
 		cte=0 ;;
 	-notd)
-		ADD_TORRENT_DONE='no'
+		ADD_TORRENT_DONE='no' ;;
 	esac
 done
 
@@ -774,6 +774,12 @@ while [ $1 ]; do
 		exit 0
 		;;
 	-startup)
+		who | awk -v me=$(id -un) \
+		'
+			BEGIN { mecnt = -1 }
+			$1 == me { mecnt++ }
+			END { exit mecnt }
+		' || break
 		_l 'attempting startup...'
 		trop_private 2>>${TROP_LOG_PATH}
 		[ "$ADD_TORRENT_DONE" = 'yes' ] && \

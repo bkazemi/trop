@@ -1,4 +1,4 @@
-.Dd October 5, 2015
+.Dd October 29, 2015
 .Dt TROP 1
 .Os
 .Sh NAME
@@ -109,12 +109,27 @@ all matching torrents'
 .Ar base
 will be stripped from their location.
 One important thing to note is that currently if you attempt to remove the base and the resulting relative path is still the same Transmission will _not_ update it to the relative path. However, once you do move the base, you can strip it to a relative path and not have to fuss if you move bases again.
+.It Fl tm Ar tracker-alias
+Fuctionally equivalent to
+.Fl m
+but filter out torrents not matching the trackers listed under
+.Ar tracker-alias
 .It Fl dl
 Show information about downloading torrents.
 This will include torrents that are both `uploading' and `downloading' information.
+.It Fl tdl Ar tracker-alias
+Fuctionally equivalent to
+.Fl dl
+but filter out torrents not matching the trackers listed under
+.Ar tracker-alias
 .It Fl ns
 List number of torrents seeding.
 This does NOT include torrents that are both `uploading' and `downloading' information.
+.It Fl tns Ar tracker-alias
+Fuctionally equivalent to
+.Fl ns
+but filter out torrents not matching the trackers listed under
+.Ar tracker-alias
 .It Fl si
 Show information about seeding torrents.
 This flag will display all information about each seeding torrent (equivalent to `-t id -i' in tr-remote).
@@ -157,6 +172,9 @@ Current actions include:
 .Dl Remove torrent when done. Adding `hard' will remove files as well.
 .Dl Sy stop
 .Dl Stop the torrent when done. This will halt seeding of the torrent.
+.It Fl notd
+Stop torrent from being added to the torrent-done queue if torrents are automatically being added with the ADD_TORRENT_DONE option in
+.Pa trop.conf .
 .It Fl terr
 Show the name, ID, location and error field of torrents that show signs of an error.
 .Nm
@@ -170,7 +188,7 @@ for more information.
 .It Fl q
 Suppress all message output from
 .Nm .
-.It Fl V
+.It Fl V Fl version
 Show version information.
 This includes the latest
 .Xr transmission-remote 1

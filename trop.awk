@@ -1,24 +1,34 @@
 # current options include:
 #   func=
+#     ta   - run tracker_add
+#
 #     tm   - run tracker_match
 #     tmo  - run tracker_match_other
+#
 #     tsi  - run tracker_seed_info
+#
 #     sul  - run seed_ulrate
 #     tsul - run tracker_seed_ulrate
+#
 #     tt   - run tracker_total
 #     ttd  - run tracker_total_details
 #     tth  - run tracker_total_hashop
-#     ta   - run tracker_add
-#     tdli - run tracker_dl_info
+#
 #     dli  - run dl_info
+#     tdli - run tracker_dl_info
+#
 #     ste  - run show_tracker_errors
+#
 #     mtl  - run move_torrent_location
+#     tmtl - run tracker_move_torrent_location
+
 BEGIN {
 	if (!length(ARGV[1])) exit
 	if (!progname) progname = "trop.awk"
 	tmerr = 0
-	picked_tm  = picked_tsi = picked_sul = picked_tsul = picked_tt = 0
-	picked_tmo = picked_tns = picked_dli = picked_mtl  = picked_te = 0
+	picked_tm  = picked_tsi  = picked_sul = picked_tsul = picked_tt = 0
+	picked_tmo = picked_tns  = picked_dli = picked_tdli = picked_te = 0
+	picked_mtl = picked_tmtl = 0
 	for (i in ARGV)
 		argv[i] = ARGV[i]
 	delete ARGV
@@ -75,7 +85,7 @@ BEGIN {
 				gsub(/\&/, "\\\\&", newprefix)
 				if (argv[i] == "tmtl") {
 					tmerr = picked_tmtl = 1
-					tracker_match(argv[i+1], argv[i+2])
+					tracker_match(argv[i+1], argv[i+4])
 					i += 4
 				} else {
 					picked_mtl = 1
@@ -489,10 +499,14 @@ function show_tracker_errors()
 		tracker_total_hashop()
 	if (picked_dli)
 		dl_info()
+	if (picked_tdli)
+		tracker_dl_info()
 	if (picked_te)
 		show_tracker_errors()
 	if (picked_mtl)
 		mv_torrent_location()
+	if (picked_tmtl)
+		tracker_mv_torrent_location()
 }
 
 END {

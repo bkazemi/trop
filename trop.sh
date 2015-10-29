@@ -814,7 +814,7 @@ while [ $1 ]; do
 		three=${3}
 		echo $3 | grep -qE '/$' && three=${3%*/}
 		tmptr="transmission-remote $(hpc) -n \"$AUTH\""
-		trop_mv_torrent_location_tracker "$2" "$three" "$3"
+		trop_mv_torrent_location_tracker "$2" "$three" "$4"
 		unset three tmptr
 		test -n "$4" && shift 4 || shift 3
 		;;

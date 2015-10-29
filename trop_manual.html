@@ -106,11 +106,23 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
              once you do move the base, you can strip it to a relative path
              and not have to fuss if you move bases again.
 
+     <span class="bold">-tm</span> <span class="underline">tracker-alias</span>
+             Fuctionally equivalent to <span class="bold">-m</span> but filter out torrents not matching
+             the trackers listed under <span class="underline">tracker-alias</span>
+
      <span class="bold">-dl</span>     Show information about downloading torrents.  This will include
              torrents that are both `uploading' and `downloading' information.
 
+     <span class="bold">-tdl</span> <span class="underline">tracker-alias</span>
+             Fuctionally equivalent to <span class="bold">-dl</span> but filter out torrents not
+             matching the trackers listed under <span class="underline">tracker-alias</span>
+
      <span class="bold">-ns</span>     List number of torrents seeding.  This does NOT include torrents
              that are both `uploading' and `downloading' information.
+
+     <span class="bold">-tns</span> <span class="underline">tracker-alias</span>
+             Fuctionally equivalent to <span class="bold">-ns</span> but filter out torrents not
+             matching the trackers listed under <span class="underline">tracker-alias</span>
 
      <span class="bold">-si</span>     Show information about seeding torrents.  This flag will display
              all information about each seeding torrent (equivalent to `-t id
@@ -159,6 +171,10 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
                    Stop the torrent when done. This will halt seeding of the
                    torrent.
 
+     <span class="bold">-notd</span>   Stop torrent from being added to the torrent-done queue if
+             torrents are automatically being added with the ADD_TORRENT_DONE
+             option in <span class="underline">trop.conf</span>.
+
      <span class="bold">-terr</span>   Show the name, ID, location and error field of torrents that show
              signs of an error.  <span class="bold">trop</span> will warn the user if it detects a
              torrent error.
@@ -169,7 +185,8 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
 
      <span class="bold">-q</span>      Suppress all message output from <span class="bold">trop</span>.
 
-     <span class="bold">-V</span>      Show version information.  This includes the latest
+     <span class="bold">-V</span> <span class="bold">-version</span>
+             Show version information.  This includes the latest
              transmission-remote(1) version that <span class="bold">trop</span> was tested against.
 
      <span class="bold">-help</span>   Print a short description of the options on the command-line.
@@ -222,7 +239,7 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
      printed in <span class="bold">-sul</span> or <span class="bold">-tul</span> may not be align correctly if multi-byte
      characters appear in the text.
 
-FreeBSD 11.0-CURRENT            October 5, 2015           FreeBSD 11.0-CURRENT
+FreeBSD 11.0-CURRENT           October 29, 2015           FreeBSD 11.0-CURRENT
 </pre>
 </body>
 </html>

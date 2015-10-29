@@ -212,7 +212,9 @@ trop_awk ()
 		[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
 		[ -z $1 ] && return 41 # no alias
 		local tmp=${func} ; func='tm'
-		${awkopt} ${1} ${TROP_TRACKER} || return 0 # alias not found, awk reports
+		if ! [ "$1" = 'tm' ] && [ -z "${1##tt*}" ]; then
+			${awkopt} ${1} ${TROP_TRACKER} || return 100 # alias not found, awk reports
+		fi
 		func=${tmp}
 		${awkopt} "$@" ${TROP_TRACKER} || return 31 # trop.awk failed
 		;;
@@ -230,10 +232,10 @@ trop_tracker_total ()
 
 	[ -z "$1" ] && die 41
 	# check if alias is defined
-	trop_awk 'tm' ${1} || die 42
+	echo | trop_awk 'tm' ${1} || die $?
 	local t ta tt tta lst diff difftn diffu s
 	t="$1" tt=1 diffu=0
-	lst="$(trop_torrent l | awk '{ if ($1 !~ /Sum|ID/) print $1 }')" || die 24
+	lst="$(trop_torrent l | awk '{ if ($1 !~ /Sum|ID/) print $1 }')" || die 230
 	[ ! -e "${srcdir}/.cache" ] && \
 		{ mkdir ${srcdir}/.cache || die 23 ;}
 	[ ! -e "${srcdir}/.cache/"$1"_lstp" ] && \
@@ -247,7 +249,7 @@ trop_tracker_total ()
 		_ 'caching all torrent info'
 		ta="$(trop_torrent all i)"
 		echo "$ta" > ${srcdir}/.cache/"$1"_tap && tac=1 && \
-		echo "$ta" | trop_awk 'tth' 'add' > ${srcdir}/.cache/"$1"_thash || die 23
+		echo "$ta" | trop_awk 'tth' 'add' > ${srcdir}/.cache/"$1"_thash || die $?
 	fi
 
 	if [ -n "$diff" ]; then
@@ -318,7 +320,7 @@ trop_torrent_done ()
 	if [ -n "$1" ]; then
 		[ -z "$2" ] && die 51
 		cat ${srcdir}/.cache/tdscript | while read tid; do
-			[ "${tid%% *}" = "$1" ] && die 28
+			[ "${tid%% *}" = "$1" ] && die 270
 		done
 		case $2 in
 		rm)
@@ -418,7 +420,7 @@ trop_mtl_common ()
 		done \
 		|| die 200 ${tid}
 	}
-	eval "$@" && return 0
+	eval "$@" && return 0 || return $?
 }
 
 trop_mv_torrent_location()
@@ -427,9 +429,10 @@ trop_mv_torrent_location()
 	## [$2] - replacement prefix
 
 	trop_mtl_common p1 "$1" "$2"
-	trop_torrent all i         \
-	| trop_awk 'mtl' "$1" "$2" \
-	| trop_mtl_common p2       \
+	trop_torrent all i                    \
+	| trop_awk 'mtl' "$1" "$2"            \
+	| pipe_check 'trop_mtl_common p2' 220 \
+	|| die $?
 	echo # newline
 
 	return 0
@@ -442,9 +445,10 @@ trop_mv_torrent_location_tracker ()
 	## [$3] - replacement prefix
 
 	trop_mtl_common	p1 "$2" "$3"
-	trop_torrent all i               \
-	| trop_awk 'tmtl' "$1" "$2" "$3" \
-	| trop_mtl_common p2             \
+	trop_torrent all i                    \
+	| trop_awk 'tmtl' "$1" "$2" "$3"      \
+	| pipe_check 'trop_mtl_common p2' 220 \
+	|| die $?
 	echo # newline
 
 	return 0
@@ -453,6 +457,7 @@ trop_mv_torrent_location_tracker ()
 pipe_check ()
 {
 	## $1 - shell commands
+	## $2 - custom err code
 
 	{ \
 	local inp="$(cat /dev/stdin)"
@@ -461,6 +466,7 @@ pipe_check ()
 		echo "$inp" | eval "$1" || return $?
 		return 0
 	fi
+	[ -n "$2" ] && return $2
 	return 22 \
 	;}
 }
@@ -475,6 +481,7 @@ trop_errors ()
 	1)
 		_ "transmission-remote error"
 		;;
+	100) ;; # no message
 ## FUNC GENERAL ERRORS ##
 	2)
 		_ 'trop_seed_list() failed'
@@ -486,25 +493,28 @@ trop_errors ()
 		_ 'pipe_check(): nothing on stdin,'\
 		  'probably nothing currently seeding'
 		;;
+	220)
+		_ 'pipe_check(): no input'
+		;;
 	23)
 		_ 'trop_tracker_total(): caching error'
 		;;
-	24)
+	230)
 		_ "trop_tracker_total(): failed getting torrent IDs"
 		;;
 	25)
-		_ 'no tracker errors detected.'
+		_ 'show_tracker_errors(): no tracker errors detected.'
 		;;
 	26)
-		_ "WARNING: trop detected a tracker error. Use the \`-terr' switch to show more info."
+		_ "check_tracker_errors(): WARNING: trop detected a tracker error. Use the \`-terr' switch to show more info."
 		;;
 	27)
 		_ 'trop_tracker_done(): failed to perform requested action on torrent' "$2"
 		;;
-	28)
+	270)
 		_ 'trop_tracker_done(): torrent already scheduled for action'
 		;;
-	29)
+	271)
 		_ "trop_tracker_done(): unknown action -- actions include:\n" \
 		  " rm [hard] - Remove torrent when done. Adding \`hard' will remove files as well.\n"\
 		  " stop - Stop the torrent when done. This will halt seeding of the torrent."
@@ -513,6 +523,7 @@ trop_errors ()
 		_ 'trop_mv_torrent_location(): failed to move torrent `' "$2" "'"
 		;;
 	201)
+		  "trop_mtl_common():\n"
 		_ "Transmission currently won't change the location if the current one is a symbolic link\n"\
 		  "to the replacement base or if the relative path is the same. Bailing."
 		;;
@@ -794,7 +805,7 @@ while [ $1 ]; do
 	-t*|-p)
 		[ -z "$2" ] && die 51 "for \`${1}'"
 		trop_private
-		;&
+	case $1 in
 	-tdl)
 		trop_torrent all i | trop_awk 'tdli' $2 || die $?
 		shift 2
@@ -834,6 +845,8 @@ while [ $1 ]; do
 		[ -n "$tid" ] && trop_torrent_done ${tid} ${ADD_TORRENT_DONE_ACT:-rm}
 		exit 0
 		;;
+	esac
+	;;
 	-startup)
 		who | awk -v me=$(id -un) \
 		'

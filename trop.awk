@@ -16,7 +16,7 @@
 BEGIN {
 	if (!length(ARGV[1])) exit
 	if (!progname) progname = "trop.awk"
-	skip = tmerr = 0
+	tmerr = 0
 	picked_tm  = picked_tsi = picked_sul = picked_tsul = picked_tt = 0
 	picked_tmo = picked_tns = picked_dli = picked_mtl  = picked_te = 0
 	for (i in ARGV)
@@ -28,36 +28,38 @@ BEGIN {
 			if (argv[i] == "tsi") {
 				tmerr = picked_tsi = 1
 				tracker_match(argv[i+1], argv[i+2])
-				i += 3
+				i += 2
 			} else if (argv[i] == "tsul") {
 				tmerr = picked_tsul = 1
 				tracker_match(argv[i+1], argv[i+2])
-				i += 3
+				i += 2
 			} else if (argv[i] == "tt") {
 				tmerr = picked_tt = 1
-				tracker_match(argv[i+1], argv[i+2])
-				cachefile = argv[i+3]
+				tracker_match(argv[i+1], argv[i+3])
+				cachefile = argv[i+2]
 				i += 3
 			} else if (argv[i] == "ttd") {
 				tmerr = picked_ttd = 1
 				tracker_match(argv[i+1], argv[i+2])
+				i += 2
 			} else if (argv[i] == "tth") {
 				picked_tth = 1
 				c = 0
 				if ((op = argv[i+1]) == "check") {
-					c = skip = 1
+					c = 1
 					hash = argv[i+2]
 				}
-				i += 3
+				i += (c ? 2 : 1)
 			} else if (argv[i] == "tmo") {
 				tracker_match_other(argv[i+1], argv[i+2])
-				i += 3
+				i += 2
 			} else if (argv[i] == "tm") {
+				tmerr = 1
 				exit(tracker_match(argv[i+1], argv[i+2]))
 			} else if (argv[i] == "tns") {
 				tmerr = picked_tns = 1
 				tracker_match(argv[i+1], argv[i+2])
-				i += 3
+				i += 2
 			} else if (argv[i] == "ta") {
 				tracker_add(argv[i+1], argv[i+2], argv[i+3], argv[i+4])
 				exit 0
@@ -68,35 +70,31 @@ BEGIN {
 				prefix = argv[i+1+shift]
 				newprefix = argv[i+2+shift]
 				if (newprefix && newprefix !~ /\/$/)
-				newprefix = newprefix"/"
+					newprefix = newprefix"/"
 				# `&' produces bizarre results without a backslash
 				gsub(/\&/, "\\\\&", newprefix)
-			} else if (argv[i] == "tmtl") {
-				tmerr = picked_tmtl = 1
-				i += 4
-			} else if (argv[i] == "mtl") {
-				picked_mtl = 1
-				i += 3
+				if (argv[i] == "tmtl") {
+					tmerr = picked_tmtl = 1
+					tracker_match(argv[i+1], argv[i+2])
+					i += 4
+				} else {
+					picked_mtl = 1
+					i += 3
+				}
 			} else if (argv[i] == "sul") {
 				picked_sul = 1
-				i++
 			} else if (argv[i] == "ste") {
 				picked_te = 1
-				i++
 			} else if (argv[i] == "dli") {
 				tmerr = picked_dli = 1
-				i++
 			} else if (argv[i] == "tdli") {
 				tmerr = picked_tdli = 1
 				tracker_match(argv[i+1], argv[i+2])
-				i += 3
+				i += 2
 			} else {
 				err("invalid function")
 			}
 		} else if (argv[i] == "-") {
-			continue
-		} else if (skip) {
-			skip = 0
 			continue
 		} else {
 			err("invalid option `"argv[i]"'")
@@ -110,7 +108,8 @@ function err(msg)
 		printf progname": " msg"\n" > "/dev/stderr"
 
 	# drain stdin to prevent a broken pipe
-	while (getline);
+	fflush()
+	if ($0) while(getline);
 
 	exit 1
 }

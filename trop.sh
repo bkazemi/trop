@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.2.3
+'trop 1.3.0
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -20,6 +20,7 @@ options:
 
  -m   <base> [new-base]    replace the base in the location of any matching
                            torrents
+ -tm  <tr-alias> <b> [nb]  same as -m, but for torrents under tracker-alias
 
  -dl                       show information about downloading torrents
  -ns                       list number of torrents actively seeding
@@ -29,14 +30,18 @@ options:
  -t    <torrent-id> <opt>  pass tr-remote option to torrent
  -ta   [tracker-alias]     add a tracker alias interactively
  -td   <torrent-id> <act>  have torrent perform action upon DL completion
+ -notd                     stop torrent from being added to the torrent-done
+                           queue if torrents are automatically being added
  -terr                     show torrents that have errors
+ -tdl  <tracker-alias>     show info about downloading torrents by tracker
+ -tns  <tracker-alias>     list number of torrents actively seeding by tracker
  -ts   <tracker-alias>     list seeding torrents by tracker
  -tt   <tracker-alias>     show total amount downloaded from tracker
  -tul  <tracker-alias>     list seeding torrents and their UL rates by tracker
 
  -startup                  setup defaults - intended to be used when logging in
  -q                        suppress all message output
- -V                        show version information
+ -V, -version              show version information
  -help                     show this output
 EOF
 
@@ -62,6 +67,8 @@ printf_wrap ()
 {
 	# in case printf is used to display anything to user
 	[ $silent -eq 0 ] && printf "$@" >&2
+
+	return 0
 }
 
 trop_private ()
@@ -101,6 +108,15 @@ trop_num_seed ()
 	return 0
 }
 
+trop_num_seed_tracker ()
+{
+	## $1 - alias
+
+	trop_seed_info | pipe_check "trop_awk 'tns' $1" || die $?
+
+	return 0
+}
+
 trop_seed_info ()
 {
 	trop_seed_list | awk '{if ($1 !~ /ID|Sum/) print $1}' \
@@ -113,6 +129,16 @@ trop_seed_info ()
 	return 0
 }
 
+trop_seed_info_tracker ()
+{
+	## $1 - alias
+
+	trop_seed_info | pipe_check "trop_awk 'tsi' $1" || die $?
+
+	return 0
+}
+
+
 trop_seed_ulrate ()
 {
 	## $1 - alias
@@ -122,20 +148,11 @@ trop_seed_ulrate ()
 	return 0
 }
 
-trop_seed_tracker_ul()
+trop_seed_ulrate_tracker()
 {
 	## $1 - alias
 
 	trop_seed_info | pipe_check "trop_awk 'tsul' $1" || die $?
-
-	return 0
-}
-
-trop_seed_tracker ()
-{
-	## $1 - alias
-
-	trop_seed_info | pipe_check "trop_awk 'tsi' $1" || die $?
 
 	return 0
 }
@@ -178,28 +195,31 @@ trop_make_file ()
 trop_awk ()
 {
 	## $1 - AWK function to execute
-	## $2 - options to pass to AWK function
-	## $3 - sub-option
+	## $2..$n - options to pass to AWK function
 
-	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${1}"
-	case ${1} in
+	local func=${1} ; shift
+	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${func}"
+	case ${func} in
 	ta)
-		${awkopt} ${2} ${TROP_TRACKER} ${3} "${4}" || return 31
+		${awkopt} $1 $2 "$3" ${TROP_TRACKER} || return 31
 		;;
 	tth)
 		local thash=
-		[ -n "$4" ] && thash="${srcdir}/.cache/${4}_thash"
-		${awkopt} ${2} ${3} ${thash} || return 31
+		[ -n "$3" ] && thash="${srcdir}/.cache/${3}_thash"
+		${awkopt} "$@" ${thash} || return 31
 		;;
 	t*)
 		[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
-		[ -z $2 ] && return 41 # no alias
-		awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname="trop.awk" func=tm ${2} ${TROP_TRACKER} \
-		|| return 42 # alias not found
-		${awkopt} ${2} ${TROP_TRACKER} ${3} || return 31 # trop.awk failed
+		[ -z $1 ] && return 41 # no alias
+		local tmp=${func} ; func='tm'
+		if ! [ "$1" = 'tm' ] && [ -z "${1##tt*}" ]; then
+			${awkopt} ${1} ${TROP_TRACKER} || return 100 # alias not found, awk reports
+		fi
+		func=${tmp}
+		${awkopt} "$@" ${TROP_TRACKER} || return 31 # trop.awk failed
 		;;
 	*)
-		${awkopt} || return 31
+		${awkopt} "$@" || return 31
 		;;
 	esac
 
@@ -212,10 +232,10 @@ trop_tracker_total ()
 
 	[ -z "$1" ] && die 41
 	# check if alias is defined
-	trop_awk 'tm' ${1} || die 42
+	echo | trop_awk 'tm' ${1} || die $?
 	local t ta tt tta lst diff difftn diffu s
 	t="$1" tt=1 diffu=0
-	lst="$(trop_torrent l | awk '{ if ($1 !~ /Sum|ID/) print $1 }')" || die 24
+	lst="$(trop_torrent l | awk '{ if ($1 !~ /Sum|ID/) print $1 }')" || die 230
 	[ ! -e "${srcdir}/.cache" ] && \
 		{ mkdir ${srcdir}/.cache || die 23 ;}
 	[ ! -e "${srcdir}/.cache/"$1"_lstp" ] && \
@@ -229,7 +249,7 @@ trop_tracker_total ()
 		_ 'caching all torrent info'
 		ta="$(trop_torrent all i)"
 		echo "$ta" > ${srcdir}/.cache/"$1"_tap && tac=1 && \
-		echo "$ta" | trop_awk 'tth' 'add' > ${srcdir}/.cache/"$1"_thash || die 23
+		echo "$ta" | trop_awk 'tth' 'add' > ${srcdir}/.cache/"$1"_thash || die $?
 	fi
 
 	if [ -n "$diff" ]; then
@@ -269,8 +289,8 @@ trop_tracker_total ()
 
 trop_torrent ()
 {
-	## $1 - torrent ID or single opt
-	## $2 - option paired with torrent ID
+	## $1   - torrent ID or single opt
+	## [$2] - option paired with torrent ID
 
 	[ -z "$1" ] && usage
 	local opt
@@ -300,7 +320,7 @@ trop_torrent_done ()
 	if [ -n "$1" ]; then
 		[ -z "$2" ] && die 51
 		cat ${srcdir}/.cache/tdscript | while read tid; do
-			[ "${tid%% *}" = "$1" ] && die 28
+			[ "${tid%% *}" = "$1" ] && die 270
 		done
 		case $2 in
 		rm)
@@ -323,7 +343,7 @@ trop_torrent_done ()
 		[ "$(trop_torrent $tid i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ] && \
 		eval trop_torrent $id_and_cmd || ldie 27 $tid
 		_l "successfully processed command on torrent ${tid}, removing ..."
-		sed -e "${nr}d" -I '' ${srcdir}/.cache/tdscript
+		sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
 	done
 
 	return 0
@@ -361,7 +381,7 @@ trop_tracker_add()
 			;;
 		esac
 	done
-	[ ! $numt ] && numt=0 st='NULL'
+	[ ! $numt ] && numt=0 st='_NULL'
 	local i=1
 	while [ $i -le $numt ]; do
 		printf "enter tracker #%d > " "$i"
@@ -375,44 +395,60 @@ trop_tracker_add()
 	return 0
 }
 
-trop_tracker_mv_location()
+trop_mtl_common ()
 {
-	## $1 - dir prefix to replace
-	## $2 - replacement prefix
+	##  $1  - run p1() or p2()
+	## [$2] - dir prefix for p1
+	## [$3] - repl prefix for p1
 
-	# XXX assuming tr session was started in $HOME
-	if [ "${HOSTPORT%%:*}" = 'localhost' ] || [ "${HOSTPORT%%:*}" = '127.0.0.1' ] \
-	   || [ -z "${HOSTPORT}" ]; then
-		[ "X$(file -hb ${HOME}/${1} | sed -E 's/^symbolic link to //i' 2>/dev/null)" \
-		  = "X${2}" ] && die 201
-	fi
-	local tid newloc numt=0
-	trop_torrent all i | awk -v prefix="${1}" -v newprefix="${2}" \
-	'
-		BEGIN {
-			if (newprefix && newprefix !~ /\/$/)
-				newprefix = newprefix"/"
-			# `&` produces bizarre results without a backslash
-			gsub(/\&/, "\\\\&", newprefix)
-		}
-		$1 == "Id:" { id = $2 }
-		$1 == "Location:" {
-			if ($2 ~ "^"prefix"/?") {
-				loc = $2
-				# append rest of path in case it
-				# contains spaces
-				for (i = 3; i <= NF; i++)
-					loc=loc" "$i # space is FS
-				sub("^"prefix"/?", newprefix, loc)
-				printf "%d %s\n", id, loc
-			}
-		}
-	' | while read tmp; do
-	      tid=${tmp%% *} newloc=$(echo $tmp | sed -E 's/^[^ ]+ //')
-	      eval ${tmptrop} -p -t ${tid} --move "${newloc}" >/dev/null \
-	      && printf_wrap "successfully moved $((numt += 1)) torrents\r"
-	    done \
-	|| die 200 ${tid}
+	p1 ()
+	{
+		# XXX assuming tr session was started in $HOME
+		if [ "${HOSTPORT%%:*}" = 'localhost' ] || [ "${HOSTPORT%%:*}" = '127.0.0.1' ] \
+		   || [ -z "${HOSTPORT}" ]; then
+			[ "X$(file -hb ${HOME}/${1} | sed -r 's/^symbolic link to //i' 2>/dev/null)" \
+			  = "X${HOME}/${2}" ] && die 201
+		fi
+	}
+	p2 ()
+	{
+		local tid newloc numt=0
+		while read tmp; do
+			tid=${tmp%% *} newloc=$(echo $tmp | sed -r 's/^[^ ]+ //')
+			eval ${tmptr} -t ${tid} --move "${newloc}" >/dev/null \
+			&& printf_wrap "successfully moved $((numt += 1)) torrents\r"
+		done \
+		|| die 200 ${tid}
+	}
+	eval "$@" && return 0 || return $?
+}
+
+trop_mv_torrent_location()
+{
+	##  $1  - dir prefix to replace
+	## [$2] - replacement prefix
+
+	trop_mtl_common p1 "$1" "$2"
+	trop_torrent all i                    \
+	| trop_awk 'mtl' "$1" "$2"            \
+	| pipe_check 'trop_mtl_common p2' 220 \
+	|| die $?
+	echo # newline
+
+	return 0
+}
+
+trop_mv_torrent_location_tracker ()
+{
+	##  $1  - alias
+	##  $2  - dir prefix to replace
+	## [$3] - replacement prefix
+
+	trop_mtl_common	p1 "$2" "$3"
+	trop_torrent all i                    \
+	| trop_awk 'tmtl' "$1" "$2" "$3"      \
+	| pipe_check 'trop_mtl_common p2' 220 \
+	|| die $?
 	echo # newline
 
 	return 0
@@ -421,6 +457,7 @@ trop_tracker_mv_location()
 pipe_check ()
 {
 	## $1 - shell commands
+	## $2 - custom err code
 
 	{ \
 	local inp="$(cat /dev/stdin)"
@@ -429,18 +466,22 @@ pipe_check ()
 		echo "$inp" | eval "$1" || return $?
 		return 0
 	fi
+	[ -n "$2" ] && return $2
 	return 22 \
 	;}
 }
 
 trop_errors ()
 {
-	## $1 - error code
+	##  $1  - error code
+	## [$2] - error-specific information
+	##        to concat with the error msg
 
 	case ${1} in
 	1)
 		_ "transmission-remote error"
 		;;
+	100) ;; # no message
 ## FUNC GENERAL ERRORS ##
 	2)
 		_ 'trop_seed_list() failed'
@@ -452,33 +493,37 @@ trop_errors ()
 		_ 'pipe_check(): nothing on stdin,'\
 		  'probably nothing currently seeding'
 		;;
+	220)
+		_ 'pipe_check(): no input'
+		;;
 	23)
 		_ 'trop_tracker_total(): caching error'
 		;;
-	24)
+	230)
 		_ "trop_tracker_total(): failed getting torrent IDs"
 		;;
 	25)
-		_ 'no tracker errors detected.'
+		_ 'show_tracker_errors(): no tracker errors detected.'
 		;;
 	26)
-		_ "WARNING: trop detected a tracker error. Use the \`-terr' switch to show more info."
+		_ "check_tracker_errors(): WARNING: trop detected a tracker error. Use the \`-terr' switch to show more info."
 		;;
 	27)
 		_ 'trop_tracker_done(): failed to perform requested action on torrent' "$2"
 		;;
-	28)
+	270)
 		_ 'trop_tracker_done(): torrent already scheduled for action'
 		;;
-	29)
+	271)
 		_ "trop_tracker_done(): unknown action -- actions include:\n" \
 		  " rm [hard] - Remove torrent when done. Adding \`hard' will remove files as well.\n"\
 		  " stop - Stop the torrent when done. This will halt seeding of the torrent."
 		;;
 	200)
-		_ 'trop_tracker_mv_location(): failed to move torrent `' "$2" "'"
+		_ 'trop_mv_torrent_location(): failed to move torrent `' "$2" "'"
 		;;
 	201)
+		  "trop_mtl_common():\n"
 		_ "Transmission currently won't change the location if the current one is a symbolic link\n"\
 		  "to the replacement base or if the relative path is the same. Bailing."
 		;;
@@ -520,9 +565,25 @@ trop_errors ()
 		_ 'tr-remote set to run --torrent-done-script,' \
 		  'but your configuration has the option disabled. Bailing.'
 		;;
+	55)
+		_ 'trop depends on' "$2" "but couldn't find it. Bailing."
+		;;
 	*)
 		_ 'error'
 		;;
+	esac
+
+	return 0
+}
+
+trop_dep ()
+{
+	## $1 - cmd-name of trop dependency
+
+	case ${1} in
+	diff)
+		# trop depends on GNU diff options
+		diff --version 2>&1 | sed 1q | grep -q 'GNU' || return 1
 	esac
 
 	return 0
@@ -610,6 +671,7 @@ unset _
 PROG_NAME=${0##*/}
 [ $# -eq 0 ] && usage
 LC_ALL=POSIX
+POSIXLY_CORRECT=1
 toppid=$$
 silent=0
 trap 'exit 1' 6
@@ -628,7 +690,7 @@ file -hb $0 | grep -q '^POSIX shell' && \
 		srcdir=${0%/*}                              \
 	;}	                                            \
 || \
-srcdir="$(echo $(file -hb $0) | sed -E -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
+srcdir="$(echo $(file -hb $0) | sed -r -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
 
 TROP_TRACKER=${srcdir}/trackers
 auser=0 huser=0 PRIVATE=0 cte=1
@@ -644,10 +706,12 @@ for i; do
 		usage ;;
 	-q)
 		silent=1 ;;
-	-V)
+	-V|-version)
 		echo "$TROP_VERSION" ; exit 0 ;;
 	-terr|-ta|-td|tdauto|-startup)
 		cte=0 ;;
+	-notd)
+		ADD_TORRENT_DONE='no' ;;
 	esac
 done
 
@@ -680,7 +744,7 @@ while [ $1 ]; do
 		;;
 	-dl)
 		trop_private
-		trop_torrent all i | trop_awk 'dli' || die 31
+		trop_torrent all i | trop_awk 'dli' || die $?
 		shift
 		;;
 	-m)
@@ -688,9 +752,9 @@ while [ $1 ]; do
 		two=${2}
 		echo $2 | grep -qE '/$' && two=${2%*/}
 		trop_private
-		tmptrop="${srcdir}/trop.sh $(hpc) -a '$AUTH'"
-		trop_tracker_mv_location "$two" "$3"
-		unset two
+		tmptr="transmission-remote $(hpc) -n \"$AUTH\""
+		trop_mv_torrent_location "$two" "$3"
+		unset two tmptr
 		test -n "$3" && shift 3 || shift 2
 		;;
 	-ns)
@@ -722,21 +786,6 @@ while [ $1 ]; do
 		trop_torrent_done "$2" "$3" "$4"
 		exit 0
 		;;
-	-ts)
-		trop_private
-		trop_seed_tracker $2
-		shift 2
-		;;
-	-tul)
-		trop_private
-		trop_seed_tracker_ul $2
-		shift 2
-		;;
-	-tt)
-		trop_private
-		trop_tracker_total $2
-		shift 2
-		;;
 	-t|-t[0-9]*)
 		trop_private
 		if [ ${#1} -gt 2 ]; then
@@ -753,9 +802,40 @@ while [ $1 ]; do
 		# over-shifting produces garbage
 		test -n "$2" && shift 2 || shift
 		;;
-	-p)
-		test -z "$2" && die 51 "for \`-p'"
+	-t*|-p)
+		[ -z "$2" ] && die 51 "for \`${1}'"
 		trop_private
+	case $1 in
+	-tdl)
+		trop_torrent all i | trop_awk 'tdli' $2 || die $?
+		shift 2
+		;;
+	-tm)
+		three=${3}
+		echo $3 | grep -qE '/$' && three=${3%*/}
+		tmptr="transmission-remote $(hpc) -n \"$AUTH\""
+		trop_mv_torrent_location_tracker "$2" "$three" "$4"
+		unset three tmptr
+		test -n "$4" && shift 4 || shift 3
+		;;
+	-tns)
+		trop_num_seed_tracker $2
+		shift 2
+		;;
+	-ts)
+		trop_seed_info_tracker $2
+		shift 2
+		;;
+	-tul)
+		trop_seed_ulrate_tracker $2
+		shift 2
+		;;
+	-tt)
+		trop_dep 'diff' || die 55 'GNU diff'
+		trop_tracker_total $2
+		shift 2
+		;;
+	-p)
 		shift
 		trout=$(transmission-remote $(hpc) -n "$AUTH" "$@" 2>&1) || \
 		{ [ -n "$trout" ] && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" ; die 1 ;}
@@ -765,7 +845,15 @@ while [ $1 ]; do
 		[ -n "$tid" ] && trop_torrent_done ${tid} ${ADD_TORRENT_DONE_ACT:-rm}
 		exit 0
 		;;
+	esac
+	;;
 	-startup)
+		who | awk -v me=$(id -un) \
+		'
+			BEGIN { mecnt = -1 }
+			$1 == me { mecnt++ }
+			END { exit mecnt }
+		' || break
 		_l 'attempting startup...'
 		trop_private 2>>${TROP_LOG_PATH}
 		[ "$ADD_TORRENT_DONE" = 'yes' ] && \

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.3.0
+'trop 1.3.1
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -862,7 +862,7 @@ while [ $1 ]; do
 		|| _l 'failed to set tr-remote --torrent-done-script' ;}
 		exit 0
 		;;
-	-q)
+	-q|-notd)
 		shift
 		;;
 	-*)

@@ -393,7 +393,7 @@ function tracker_dl_info()
 					if ($2 ~ /^State: (Download)|(Up & Down)/) {
 						printf "%s\n%s\n%s\n", name, id, $0
 						while (getline) {
-							if ($2 ~ /^(Percent Done:)|(ETA:)|(Download Speed:)|(Upload Speed:)|(Peers:)/)
+							if ($2 ~ /^(Percent Done)|(ETA)|(Download Speed)|(Upload Speed)|(Peers):/)
 								# leave leading spaces to make info clearer
 								print $0
 							else if ($1 ~ /^HISTORY/) {
@@ -421,7 +421,7 @@ function dl_info()
 		if ($2 ~ /^State: (Download)|(Up & Down)/) {
 			printf "%s\n%s\n%s\n", name, id, $0
 			while (getline) {
-				if ($2 ~ /^(Percent Done:)|(ETA:)|(Download Speed:)|(Upload Speed:)|(Peers:)/)
+				if ($2 ~ /^(Percent Done)|(ETA)|(Download Speed)|(Upload Speed)|(Peers):/)
 					# leave leading spaces to make info clearer
 					print $0
 				else if ($1 ~ /^HISTORY/) {
@@ -487,7 +487,7 @@ function show_tracker_errors()
 			printf "%s\n%s\n", $2, id
 		} else if ($2 ~ /^Id:/) {
 			id = $0
-		} else if ($2 ~ /^(Location:)|(Error:)/) {
+		} else if ($2 ~ /^(Location)|(Error):/) {
 			print $0
 		}
 	} while (getline)

@@ -862,7 +862,7 @@ while [ $1 ]; do
 		|| _l 'failed to set tr-remote --torrent-done-script' ;}
 		exit 0
 		;;
-	-q)
+	-q|-notd)
 		shift
 		;;
 	-*)

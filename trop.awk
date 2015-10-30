@@ -29,6 +29,9 @@ BEGIN {
 	picked_tm  = picked_tsi  = picked_sul = picked_tsul = picked_tt = 0
 	picked_tmo = picked_tns  = picked_dli = picked_tdli = picked_te = 0
 	picked_mtl = picked_tmtl = 0
+	# delete ARGV array to prevent
+	# awk from taking arguments as
+	# input files
 	for (i in ARGV)
 		argv[i] = ARGV[i]
 	delete ARGV
@@ -112,6 +115,14 @@ BEGIN {
 	}
 }
 
+function assert(bool, msg)
+{
+	if (bool)
+		err("assertion " (msg ? "failed: "msg : "failure"))
+
+	return 0
+}
+
 function err(msg)
 {
 	if (!silent)
@@ -133,17 +144,16 @@ function tracker_is_valid(trackerarr)
 	return
 }
 
-function tracker_match(alias, tfile)
+function tracker_match(alias, tracker_file)
 {
-	if (!alias)
-		err("no alias specified")
-	while ((getline < tfile) > 0) {
+	assert(!alias, "no alias specified")
+	while ((getline < tracker_file) > 0) {
 		if ($1 == alias && $2 == ":") {
-			allt[0] = $3
+			all_trackers[0] = $3
 			idx = 1
-			while (getline < tfile) {
+			while (getline < tracker_file) {
 				if ($1 ~ /^\+$/) {
-					allt[idx++] = $2
+					all_trackers[idx++] = $2
 					continue
 				} else if ($1 == ":") {
 					err("first tracker already defined for alias `"alias"'")
@@ -153,33 +163,33 @@ function tracker_match(alias, tfile)
 		}
 	}
 
-	close(tfile)
-	return (!length(allt)) ? (tmerr ? err("tracker alias not found") : 1) : 0
+	close(tracker_file)
+	return (!length(all_trackers)) ? (tmerr ? err("tracker alias not found") : 1) : 0
 }
 
-function tracker_get_all(tfile)
+function tracker_get_all(tracker_file)
 {
 	idx = 0
-	while ((getline < tfile) > 0) {
+	while ((getline < tracker_file) > 0) {
 		if ($1 == "+")
-			everyt[idx++] = $2
+			every_tracker[idx++] = $2
 		else if ($2 == ":")
-			everyt[idx++] = $3
+			every_tracker[idx++] = $3
 	}
 
 	return
 }
 
-function tracker_match_other(alias, stlst, tfile)
+function tracker_match_other(alias, secondary_tracker_list, tracker_file)
 {
-	if (!tracker_match(alias, tfile))
+	if (!tracker_match(alias, tracker_file))
 		err("alias already defined")
-	tracker_get_all(tfile)
-	for (i in everyt) {
-		tmpt = tolower(everyt[i])
-		for (j in stlst) {
-			if (tmpt == tolower(stlst[j]))
-				err("tracker `" stlst[j] "' already defined")
+	tracker_get_all(tracker_file)
+	for (i in every_tracker) {
+		tmp_tracker = tolower(every_tracker[i])
+		for (j in secondary_tracker_list) {
+			if (tmp_tracker == tolower(secondary_tracker_list[j]))
+				err("tracker `" secondary_tracker_list[j] "' already defined")
 		}
 	}
 
@@ -188,47 +198,48 @@ function tracker_match_other(alias, stlst, tfile)
 
 function tracker_match_line()
 {
-	for (i in allt)
-		if ($0 ~ "^[[:space:]]*Magnet.*&tr=.*"allt[i]".*")
+	for (i in all_trackers)
+		if ($0 ~ "^[[:space:]]*Magnet.*&tr=.*"all_trackers[i]".*")
 			return 1
 
 	return 0
 }
 
-function tracker_add(alias, prim, sec, tfile)
+function tracker_add(alias, primary_tracker, secondary_trackers, tracker_file)
 {
-	if (!alias || !prim || !sec)
-		err("You entered an empty string!")
-	if (sec == "_NULL") sec = 0
-	tmparr[0] = prim
+	assert((!alias || !primary_tracker || !secondary_trackers), "You entered an empty string!")
+	if (secondary_trackers == "_NULL")
+		secondary_trackers = 0
+	tmparr[0] = primary_tracker
+	# check if tracker format is valid
 	tracker_is_valid(tmparr)
-	if (sec) {
-		split(sec, secarr)
+	if (secondary_trackers) {
+		split(secondary_trackers, secarr)
 		tracker_is_valid(secarr)
 		for (i in secarr) {
-			if (secarr[i] == prim)
-				err("tracker `"prim"' entered more than once")
+			if (secarr[i] == primary_tracker)
+				err("tracker `"primary_tracker"' entered more than once")
 			# I don't believe {} is portable...
-			if (sec ~ " *""("secarr[i]")"" *""("secarr[i]")"" *")
+			if (secondary_trackers ~ " *""("secarr[i]")"" *""("secarr[i]")"" *")
 				err("tracker `"secarr[i]"' entered more than once")
 		}
 	}
 	# since split idx starts at one, use 0 for
 	# primary tracker
-	secarr[0] = prim
-	tracker_match_other(alias, secarr, tfile)
+	secarr[0] = primary_tracker
+	tracker_match_other(alias, secarr, tracker_file)
 	delete secarr[0]
-	print alias" : "prim >> tfile
-	if (sec)
+	print alias" : "primary_tracker >> tracker_file
+	if (secondary_trackers)
 		for (i in secarr)
-			printf "\t+ "secarr[i]"\n" >> tfile
+			printf "\t+ "secarr[i]"\n" >> tracker_file
 
 	return 0
 }
 
 function tracker_seed_info()
 {
-	if (!$0) exit 1
+	assert(!$0, "no input")
 	do {
 		if (tracker_match_line())
 			printf "%s\n%s\n%s\n%s\n----\n", id, name, hash, $0
@@ -245,7 +256,7 @@ function tracker_seed_info()
 
 function tracker_seed_ulrate()
 {
-	if (!$0) exit 1
+	assert(!$0, "no input")
 	ll = idx = 0
 	do {
 		if (tracker_match_line()) {
@@ -271,7 +282,7 @@ function tracker_seed_ulrate()
 
 function seed_ulrate()
 {
-	if (!$0) exit 1
+	assert(!$0, "no input")
 	ll = idx = 0
 	do {
 		if ($0 ~ /^[[:space:]]*Name/) {
@@ -293,7 +304,7 @@ function seed_ulrate()
 
 function tracker_total()
 {
-	if (!$0) exit 1
+	assert(!$0, "no input")
 	total = tmpnum = 0
 	do {
 		if ($0 ~ /None/) {
@@ -336,7 +347,7 @@ function tracker_total_hashop()
 
 function tracker_total_details()
 {
-	if (!$0) exit 1
+	assert(!$0, "no input")
 	FS="  +"
 	do {
 		if ($2 ~ /^Magnet:/)
@@ -356,7 +367,7 @@ function tracker_total_details()
 
 function tracker_num_seed()
 {
-	if (!$0) exit 1
+	assert(!$0, "no input")
 	tseeding = 0
 	FS="  +"
 	do {
@@ -373,7 +384,7 @@ function tracker_num_seed()
 
 function tracker_dl_info()
 {
-	if (!$0) exit 1
+	assert(!$0, "no input")
 	FS="  +"
 	do {
 		if ($2 ~ /^Magnet:/) {
@@ -404,7 +415,7 @@ function tracker_dl_info()
 
 function dl_info()
 {
-	if (!$0) exit 1
+	assert(!$0, "no input")
 	FS="  +"
 	do {
 		if ($2 ~ /^State: (Download)|(Up & Down)/) {
@@ -531,7 +542,7 @@ END {
 		}
 	}
 	if (picked_tt) {
-		if (!tdn) exit 1
+		assert(!tdn, "no downloaded files detected")
 		print "Total downloaded: " tdn " GB"
 		print tdn" GB" >cachefile
 	}

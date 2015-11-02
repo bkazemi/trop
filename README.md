@@ -22,6 +22,12 @@ fashion, the only requirement is that all files distributed in
 the release are kept in the same directory. Any other configuration
 is not guaranteed to work.
 
+## Updating:
+
+Starting with trop 1.4.0, you can update the core files through install.sh by supplying
+\`up' or \`update' as an argument to install.sh. This currently does _not_ update files
+that the user might have edited themselves (tropriv.sh, trop.conf)
+
 ## Storing tr-remote authentication information
 
 To save a default host and/or user:pass combination, the tropriv.sh file was created.

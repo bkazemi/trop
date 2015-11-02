@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.3.1
+'trop 1.4.0
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -339,11 +339,11 @@ trop_torrent_done ()
 	local nr=0 tid
 	cat ${srcdir}/.cache/tdscript | while read id_and_cmd; do
 		: $((nr += 1))
-		tid=$(echo $id_and_cmd | cut -f1 -d' ')
-		[ "$(trop_torrent $tid i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ] && \
-		eval trop_torrent $id_and_cmd || ldie 27 $tid
-		_l "successfully processed command on torrent ${tid}, removing ..."
-		sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
+		if [ "$(trop_torrent ${id_and_cmd%% *} i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ]; then
+			eval trop_torrent $id_and_cmd || ldie 27 $tid
+			_l "successfully processed command on torrent ${tid}, removing ..."
+			sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
+		fi
 	done
 
 	return 0

@@ -341,7 +341,7 @@ trop_torrent_done ()
 		: $((nr += 1))
 		if [ "$(trop_torrent ${id_and_cmd%% *} i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ]; then
 			eval trop_torrent $id_and_cmd || ldie 27 $tid
-			_l "successfully processed command on torrent ${tid}, removing ..."
+			_l "successfully processed command on torrent ${id_and_cmd%% *}, removing ..."
 			sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
 		fi
 	done

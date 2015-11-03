@@ -171,7 +171,9 @@ function tracker_match(alias, tracker_file)
 			}
 		}
 	}
+	savei = i
 	tracker_is_valid(all_trackers)
+	i = savei
 
 	close(tracker_file)
 	return (!length(all_trackers)) ? (tmerr ? err("tracker alias not found") : 1) : 0

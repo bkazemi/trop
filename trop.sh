@@ -708,7 +708,7 @@ for i; do
 		silent=1 ;;
 	-V|-version)
 		echo "$TROP_VERSION" ; exit 0 ;;
-	-terr|-ta|-td|tdauto|-startup)
+	-terr|-t[ad]|tdauto|-startup)
 		cte=0 ;;
 	-notd)
 		ADD_TORRENT_DONE='no' ;;
@@ -803,7 +803,7 @@ while [ $1 ]; do
 		# over-shifting produces garbage
 		test -n "$2" && shift 2 || shift
 		;;
-	-t*|-p)
+	-tdl|-tns|-tul|-t[mst]|-p)
 		[ -z "$2" ] && die 51 "for \`${1}'"
 		trop_private
 	case $1 in

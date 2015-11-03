@@ -34,6 +34,7 @@ options:
                            queue if torrents are automatically being added
  -terr                     show torrents that have errors
  -tdl  <tracker-alias>     show info about downloading torrents by tracker
+ -tl   <tracker-alias>     show tracker URLs that are binded to tracker-alias
  -tns  <tracker-alias>     list number of torrents actively seeding by tracker
  -ts   <tracker-alias>     list seeding torrents by tracker
  -tt   <tracker-alias>     show total amount downloaded from tracker
@@ -212,7 +213,7 @@ trop_awk ()
 		[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
 		[ -z $1 ] && return 41 # no alias
 		local tmp=${func} ; func='tm'
-		if ! [ "$1" = 'tm' ] && [ -z "${1##tt*}" ]; then
+		if ! [ "$1" = 'tm' ] && [ -z "${1##t[tl]*}" ]; then
 			${awkopt} ${1} ${TROP_TRACKER} || return 100 # alias not found, awk reports
 		fi
 		func=${tmp}
@@ -393,6 +394,11 @@ trop_tracker_add()
 	echo | trop_awk 'ta' $a $pt "$st" || die $?
 
 	return 0
+}
+
+trop_tracker_list ()
+{
+	echo | trop_awk 'tl' $1 || die $?
 }
 
 trop_mtl_common ()
@@ -803,7 +809,7 @@ while [ $1 ]; do
 		# over-shifting produces garbage
 		test -n "$2" && shift 2 || shift
 		;;
-	-tdl|-tns|-tul|-t[mst]|-p)
+	-tdl|-tns|-tul|-t[lmst]|-p)
 		[ -z "$2" ] && die 51 "for \`${1}'"
 		trop_private
 	case $1 in
@@ -818,6 +824,10 @@ while [ $1 ]; do
 		trop_mv_torrent_location_tracker "$2" "$three" "$4"
 		unset three tmptr
 		test -n "$4" && shift 4 || shift 3
+		;;
+	-tl)
+		trop_tracker_list $2
+		shift 2
 		;;
 	-tns)
 		trop_num_seed_tracker $2

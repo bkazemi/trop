@@ -2,6 +2,8 @@
 #   func=
 #     ta   - run tracker_add
 #
+#     tl   - list trackers under an alias
+#
 #     tm   - run tracker_match
 #     tmo  - run tracker_match_other
 #
@@ -76,6 +78,13 @@ BEGIN {
 			} else if (argv[i] == "ta") {
 				tracker_add(argv[i+1], argv[i+2], argv[i+3], argv[i+4])
 				exit 0
+			} else if (argv[i] == "tl") {
+				tmerr = picked_tl = 1
+				tracker_match(argv[i+1], argv[i+2])
+				printf "%s : %s\n", argv[i+1], all_trackers[0]
+				for (i = 1; i < length(all_trackers); i++)
+					printf "\t+ %s\n", all_trackers[i]
+				i += 2
 			} else if (argv[i] ~ /mtl$/) {
 				# common mv_tr_loc() stuff
 				shift = 0

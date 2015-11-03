@@ -1,5 +1,5 @@
-| Introduction
---------------
+Introduction
+=============
 trop is a shell script designed to make interaction with
 transmission-remote easier. It started as a group of different
 scripts I threw together to get specific information about
@@ -8,8 +8,8 @@ transmission-remote. My primary goal with this project is to
 get information or do common tasks in tr-remote in a convenient
 way.
 
-| Installing:
--------------
+Installing
+===========
 The recommended way to install trop is to use the `install.sh'
 script. The install script will install the trop files to the
 path specified in the PREFIX environment variable. The default
@@ -20,8 +20,14 @@ fashion, the only requirement is that all files distributed in
 the release are kept in the same directory. Any other configuration
 is not guaranteed to work.
 
-| Storing tr-remote authentication information
-----------------------------------------------
+Updating
+=========
+Starting with trop 1.4.0, you can update the core files through install.sh by supplying
+`up' or `update' as an argument. This currently does _not_ update files
+that the user might have edited themselves (tropriv.sh, trop.conf)
+
+Storing tr-remote authentication information
+=============================================
 To save a default host and/or user:pass combination, the tropriv.sh file was created.
 To save the host information, open tropriv.sh and enter the default you'd like to use in
 the HOSTPORT variable like so:
@@ -32,8 +38,8 @@ And likewise for the user:pass (-n switch in tr-remote)
 
 	AUTH='bob:secretpass' # set here for default
 
-| The `tracker' file
---------------------
+The `tracker' file
+===================
 The tracker file is used to bind an alias to a set of bittorrent tracker
 URLs. That way you can gather information about torrents specific to a tracker, or a
 set of trackers.
@@ -52,14 +58,14 @@ followed by a space, then the tracker entry. There may not be more than one uniq
 in any alias. Any number of secondary trackers may be specified. You may interactively add trackers
 through the `-ta' flag in trop.
 
-| trop.conf - Configuration
----------------------------
+trop.conf - Configuration
+==========================
 trop.conf is used to set default actions upon trop initialization. This file is simply a shell script
 with variables that trop sources to get defaults. Each variable is commented in trop.conf to show what
 it is used for.
 
-| Setting up trop upon login
-----------------------------
+Setting up trop upon login
+===========================
 In order to use certain features, trop must be called with the -startup flag once when logging in.
 Where to add this depends on your login shell. For Bourne-like shells this would be `~/.profile';
 In Zsh, it is `~/.zprofile'. Typically you would look for your default shell in /etc/passwd.
@@ -67,16 +73,17 @@ Once you've found out your login shell, add this to the login script:
 
 hash trop 2>&- && trop -startup
 
-| License
----------
+License
+========
 trop is licensed under the BSD2 Clause. See the LICENSE file for details.
 
-| Links
--------
+Links
+======
 http://github.com/bkazemi/trop - Main project page
+http://bkazemi.github.io/trop - Project website
 
-| Contact
----------
+Contact
+========
 For any questions, comments, etc. Contact me at:
 
 bkazemi@users.sf.net

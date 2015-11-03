@@ -22,6 +22,12 @@ fashion, the only requirement is that all files distributed in
 the release are kept in the same directory. Any other configuration
 is not guaranteed to work.
 
+## Updating:
+
+Starting with trop 1.4.0, you can update the core files through install.sh by supplying
+\`up' or \`update' as an argument. This currently does _not_ update files
+that the user might have edited themselves (tropriv.sh, trop.conf)
+
 ## Storing tr-remote authentication information
 
 To save a default host and/or user:pass combination, the tropriv.sh file was created.
@@ -48,7 +54,7 @@ example : primary-tracker.example.org
 	+ third-tracker.example.com
 ```
 The first word is the alias; The second word is the primary tracker. Both these entries
-are required. The alias and all tracker entries must NOT contain any spaces. There must
+are required. The alias and all tracker entries must _not_ contain any spaces. There must
 be a space on both sides of the alias-primary tracker separator (the colon).
 Secondary tracker entries must contain a \`+' symbol as the first non-whitespace character,
 followed by a space, then the tracker entry. There may not be more than one unique tracker URL entry

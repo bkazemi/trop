@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.3.1
+'trop 1.4.0
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -339,11 +339,11 @@ trop_torrent_done ()
 	local nr=0 tid
 	cat ${srcdir}/.cache/tdscript | while read id_and_cmd; do
 		: $((nr += 1))
-		tid=$(echo $id_and_cmd | cut -f1 -d' ')
-		[ "$(trop_torrent $tid i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ] && \
-		eval trop_torrent $id_and_cmd || ldie 27 $tid
-		_l "successfully processed command on torrent ${tid}, removing ..."
-		sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
+		if [ "$(trop_torrent ${id_and_cmd%% *} i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ]; then
+			eval trop_torrent $id_and_cmd || ldie 27 $tid
+			_l "successfully processed command on torrent ${id_and_cmd%% *}, removing ..."
+			sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
+		fi
 	done
 
 	return 0
@@ -397,11 +397,11 @@ trop_tracker_add()
 
 trop_mtl_common ()
 {
-	##  $1  - run p1() or p2()
+	##  $1  - run check_symlink() or do_move()
 	## [$2] - dir prefix for p1
 	## [$3] - repl prefix for p1
 
-	p1 ()
+	check_symlink ()
 	{
 		# XXX assuming tr session was started in $HOME
 		if [ "${HOSTPORT%%:*}" = 'localhost' ] || [ "${HOSTPORT%%:*}" = '127.0.0.1' ] \
@@ -410,7 +410,7 @@ trop_mtl_common ()
 			  = "X${HOME}/${2}" ] && die 201
 		fi
 	}
-	p2 ()
+	do_move ()
 	{
 		local tid newloc numt=0
 		while read tmp; do
@@ -428,10 +428,10 @@ trop_mv_torrent_location()
 	##  $1  - dir prefix to replace
 	## [$2] - replacement prefix
 
-	trop_mtl_common p1 "$1" "$2"
+	trop_mtl_common check_symlink "$1" "$2"
 	trop_torrent all i                    \
 	| trop_awk 'mtl' "$1" "$2"            \
-	| pipe_check 'trop_mtl_common p2' 220 \
+	| pipe_check 'trop_mtl_common do_move' 220 \
 	|| die $?
 	echo # newline
 
@@ -444,10 +444,10 @@ trop_mv_torrent_location_tracker ()
 	##  $2  - dir prefix to replace
 	## [$3] - replacement prefix
 
-	trop_mtl_common	p1 "$2" "$3"
+	trop_mtl_common	check_symlink "$2" "$3"
 	trop_torrent all i                    \
 	| trop_awk 'tmtl' "$1" "$2" "$3"      \
-	| pipe_check 'trop_mtl_common p2' 220 \
+	| pipe_check 'trop_mtl_common do_move' 220 \
 	|| die $?
 	echo # newline
 

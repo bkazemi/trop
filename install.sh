@@ -3,11 +3,46 @@ set -e
 
 # Be sure to be in the trop directory!
 
-err () { echo "install.sh stopped - error:" "$@" ; exit 1 ;}
+err ()
+{
+	[ -n "$tmpfile" ] && rm ${tmpfile}
+	echo -e "install.sh stopped - error:" "$@" ; exit 1
+}
 
+trap 'echo ; err "caught signal"' SIGINT
 : ${PREFIX:=${HOME}/.trop}
 
-[ -e "${PREFIX}" ] && { [ -f "${PREFIX}" ] && err 'PREFIX is a file' || \
+if [ -n "$1" ]; then
+	case $1 in
+	up|update) break                                   ;;
+	*) echo 'usage: install.sh [up]|[update]' ; exit 1 ;;
+	esac
+	[ ! -e ${PREFIX} ] && err "\`$PREFIX' doesn't exist"
+	[ ! -d ${PREFIX} ] && err "PREFIX \`$PREFIX' is not a directory!"
+	[ ! -e ${PREFIX}/.is_trop_dir ] && \
+	err "\`$PREFIX' doesn't look like a trop directory\n"\
+	    "\b(if it is, add \`.is_trop_dir' to the directory and restart update)"
+	for file in trop.sh trop.awk trop_torrent_done.sh README LICENSE; do
+		diff -q "$file" "${PREFIX}/${file}" >/dev/null || \
+		{ echo "${file} changed, replacing..." ; cp -f "$file" "$PREFIX" ;}
+	done
+	hash gzcat 2>/dev/null || err 'need gzcat to check manpage'
+	hash mktemp 2>/dev/null || err 'need mktemp to check manpage'
+	tmpfile=`mktemp`
+	touch $tmpfile || err "couldn't create a temporary file"
+	gzcat /usr/local/man/man1/trop.1 >${tmpfile}
+	if ! `diff -q ${tmpfile} trop.1 >/dev/null`; then
+		echo 'The man page has changed. Enter root credentials'
+		su -m root -c \
+		"
+		install -g 0 -o 0 -m 0640 trop.1 /usr/local/man/man1/ && gzip /usr/local/man/man1/trop.1 \
+		|| exit 1
+		" || err "couldn't update manpage"
+	fi
+	exit 0
+fi
+
+[ -e "${PREFIX}" ] && { [ ! -d "${PREFIX}" ] && err "PREFIX \`${PREFIX}' is not a directory!" || \
 err 'PREFIX path already exists. To be safe, manually remove this directory and restart install.sh' ;}
 eval $(stat -qs ${PREFIX%/*})
 [ -z "$st_uid" ] && err 'bad path for PREFIX'
@@ -30,10 +65,12 @@ if [ -L ${TROP_LN_FILE} ] || [ -e ${TROP_LN_FILE} ]; then
 fi
 
 mkdir ${PREFIX}
+touch ${PREFIX}/.is_trop_dir
 install -p -m 0550 trop.sh trop.awk trop_torrent_done.sh ${PREFIX} && \
 install -p -m 0640 README LICENSE trackers               ${PREFIX} && \
 install -p -m 0770 tropriv.sh trop.conf                  ${PREFIX} || err 'failed to install files'
 
+hash gzip 2>/dev/null || err 'need gzip to install manpage'
 if [ $st_uid -eq 0 ]; then
 	install -g 0 -o 0 -m 0640 trop.1 /usr/local/man/man1/ && gzip /usr/local/man/man1/trop.1 \
 	|| err "couldn't install man page"

@@ -135,7 +135,7 @@ function assert(bool, msg)
 function err(msg)
 {
 	if (!silent)
-		printf progname": " msg"\n" > "/dev/stderr"
+		print progname": "msg > "/dev/stderr"
 
 	# drain stdin to prevent a broken pipe
 	fflush()
@@ -147,7 +147,7 @@ function err(msg)
 function tracker_is_valid(trackerarr)
 {
 	for (i in trackerarr)
-		if (trackerarr[i] !~ /([[:alnum:]]+:\/\/)?([[:alnum:]]+\.[[:alpha:]]+)+/)
+		if (trackerarr[i] !~ /^([[:alnum:]]+:\/\/)?([[:alnum:]]+\.[[:alpha:]]+)+$/)
 			err("`"trackerarr[i]"' doesn't look like a proper URL!")
 
 	return
@@ -171,6 +171,7 @@ function tracker_match(alias, tracker_file)
 			}
 		}
 	}
+	tracker_is_valid(all_trackers)
 
 	close(tracker_file)
 	return (!length(all_trackers)) ? (tmerr ? err("tracker alias not found") : 1) : 0

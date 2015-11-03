@@ -390,7 +390,7 @@ trop_tracker_add()
 		st="$tmp"
 		: $((i += 1))
 	done
-	trop_awk 'ta' $a $pt "$st" || die $?
+	echo | trop_awk 'ta' $a $pt "$st" || die $?
 
 	return 0
 }
@@ -740,7 +740,8 @@ done
 while [ $1 ]; do
 	case $1 in
 	-terr)
-		show_tracker_errors ; exit 0
+		show_tracker_errors
+		exit 0
 		;;
 	-dl)
 		trop_private

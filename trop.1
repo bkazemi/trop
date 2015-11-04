@@ -179,6 +179,15 @@ Stop torrent from being added to the torrent-done queue if torrents are automati
 Show the name, ID, location and error field of torrents that show signs of an error.
 .Nm
 will warn the user if it detects a torrent error.
+.It Fl tdel Ar tracker-alias
+Remove
+.Ar tracker-alias
+from the
+.Pa trackers
+file.
+.It Fl tl Ar tracker-alias
+Show all the tracker URLs that are binded to
+.Ar tracker-alias .
 .It Fl startup
 Initialize
 .Nm

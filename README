@@ -52,11 +52,11 @@ example : primary-tracker.example.org
 
 The first word is the alias; The second word is the primary tracker. Both these entries
 are required. The alias and all tracker entries must NOT contain any spaces. There must
-be a space on both sides of the alias-primary tracker separator (the colon).
-Secondary tracker entries must contain a `+' symbol as the first non-whitespace character,
-followed by a space, then the tracker entry. There may not be more than one unique tracker URL entry
-in any alias. Any number of secondary trackers may be specified. You may interactively add trackers
-through the `-ta' flag in trop.
+be a space on both sides of the alias-primary tracker separator (the colon). The alias may
+_not_ start with `+' or `#'. Secondary tracker entries must contain a `+' symbol as the
+first non-whitespace character, followed by a space, then the tracker entry. There may not
+be more than one unique tracker URL entry in any alias. Any number of secondary trackers
+may be specified. You may interactively add trackers through the `-ta' flag in trop.
 
 trop.conf - Configuration
 ==========================
@@ -71,7 +71,7 @@ Where to add this depends on your login shell. For Bourne-like shells this would
 In Zsh, it is `~/.zprofile'. Typically you would look for your default shell in /etc/passwd.
 Once you've found out your login shell, add this to the login script:
 
-hash trop 2>&- && trop -startup
+hash trop 2>&- && trop -startup >/dev/null
 
 License
 ========

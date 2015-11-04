@@ -220,8 +220,8 @@ function tracker_match_line()
 function tracker_add(alias, primary_tracker, secondary_trackers, tracker_file)
 {
 	assert((!alias || !primary_tracker || !secondary_trackers), "You entered an empty string!")
-	if (alias ~ /^\+/)
-		err("alias cannot start with `+'")
+	if (alias ~ /^[+#]/)
+		err("alias cannot start with `"substr(alias, 1, 1)"'")
 	if (secondary_trackers == "_NULL")
 		secondary_trackers = 0
 	tmparr[0] = primary_tracker

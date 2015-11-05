@@ -27,7 +27,7 @@
 BEGIN {
 	if (!length(ARGV[1])) exit
 	if (!progname) progname = "trop.awk"
-	tmerr = 0
+	tmerr = 1
 	picked_tm  = picked_tsi  = picked_sul = picked_tsul = picked_tt = 0
 	picked_tmo = picked_tns  = picked_dli = picked_tdli = picked_te = 0
 	picked_mtl = picked_tmtl = 0
@@ -41,20 +41,20 @@ BEGIN {
 		if (argv[i] ~ /^func=/) {
 			sub(/^func=/, "", argv[i])
 			if (argv[i] == "tsi") {
-				tmerr = picked_tsi = 1
+				picked_tsi = 1
 				tracker_match(argv[i+1], argv[i+2])
 				i += 2
 			} else if (argv[i] == "tsul") {
-				tmerr = picked_tsul = 1
+				picked_tsul = 1
 				tracker_match(argv[i+1], argv[i+2])
 				i += 2
 			} else if (argv[i] == "tt") {
-				tmerr = picked_tt = 1
+				picked_tt = 1
 				tracker_match(argv[i+1], argv[i+3])
 				cachefile = argv[i+2]
 				i += 3
 			} else if (argv[i] == "ttd") {
-				tmerr = picked_ttd = 1
+				picked_ttd = 1
 				tracker_match(argv[i+1], argv[i+2])
 				i += 2
 			} else if (argv[i] == "tth") {
@@ -66,24 +66,29 @@ BEGIN {
 				}
 				i += (c ? 2 : 1)
 			} else if (argv[i] == "tmo") {
+				tmerr = 0
 				tracker_match_other(argv[i+1], argv[i+2])
 				i += 2
 			} else if (argv[i] == "tm") {
-				tmerr = 1
 				exit(tracker_match(argv[i+1], argv[i+2]))
 			} else if (argv[i] == "tns") {
-				tmerr = picked_tns = 1
+				picked_tns = 1
 				tracker_match(argv[i+1], argv[i+2])
 				i += 2
 			} else if (argv[i] == "ta") {
 				tracker_add(argv[i+1], argv[i+2], argv[i+3], argv[i+4])
 				exit 0
 			} else if (argv[i] == "tl") {
-				tmerr = picked_tl = 1
-				tracker_match(argv[i+1], argv[i+2])
-				printf "%s : %s\n", argv[i+1], all_trackers[0]
-				for (i = 1; i < length(all_trackers); i++)
-					printf "\t+ %s\n", all_trackers[i]
+				if (ARGC != 4) {
+					while ((getline < argv[i+1]) > 0)
+						if ($1 !~ /^#/)
+							print $0
+				} else {
+					tracker_match(argv[i+1], argv[i+2])
+					printf "%s : %s\n", argv[i+1], all_trackers[0]
+					for (i = 1; i < length(all_trackers); i++)
+						printf "\t+ %s\n", all_trackers[i]
+				}
 				i += 2
 			} else if (argv[i] ~ /mtl$/) {
 				# common mv_tr_loc() stuff
@@ -96,7 +101,7 @@ BEGIN {
 				# `&' produces bizarre results without a backslash
 				gsub(/\&/, "\\\\&", newprefix)
 				if (argv[i] == "tmtl") {
-					tmerr = picked_tmtl = 1
+					picked_tmtl = 1
 					tracker_match(argv[i+1], argv[i+4])
 					i += 4
 				} else {
@@ -108,9 +113,9 @@ BEGIN {
 			} else if (argv[i] == "ste") {
 				picked_te = 1
 			} else if (argv[i] == "dli") {
-				tmerr = picked_dli = 1
+				picked_dli = 1
 			} else if (argv[i] == "tdli") {
-				tmerr = picked_tdli = 1
+				picked_tdli = 1
 				tracker_match(argv[i+1], argv[i+2])
 				i += 2
 			} else {

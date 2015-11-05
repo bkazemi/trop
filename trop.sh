@@ -35,7 +35,7 @@ options:
  -terr                     show torrents that have errors
  -tdel <tracker-alias>     remove tracker-alias from trackers file
  -tdl  <tracker-alias>     show info about downloading torrents by tracker
- -tl   <tracker-alias>     show tracker URLs that are binded to tracker-alias
+ -tl   [tracker-alias]     show tracker URLs that are binded to tracker-alias
  -tns  <tracker-alias>     list number of torrents actively seeding by tracker
  -ts   <tracker-alias>     list seeding torrents by tracker
  -tt   <tracker-alias>     show total amount downloaded from tracker
@@ -203,6 +203,7 @@ trop_awk ()
 	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${func}"
 	case ${func} in
 	ta)
+		[ ! -f $TROP_TRACKER ] && return 4
 		${awkopt} $1 $2 "$3" ${TROP_TRACKER} || return 31
 		;;
 	tth)
@@ -210,11 +211,15 @@ trop_awk ()
 		[ -n "$3" ] && thash="${srcdir}/.cache/${3}_thash"
 		${awkopt} "$@" ${thash} || return 31
 		;;
+	tl)
+		[ ! -f $TROP_TRACKER ] && return 4
+		${awkopt} "$@" ${TROP_TRACKER} || return 31
+		;;
 	t*)
 		[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
 		[ -z $1 ] && return 41 # no alias
 		local tmp=${func} ; func='tm'
-		if ! [ "$1" = 'tm' ] && [ -z "${1##t[tl]*}" ]; then
+		if ! [ "$1" = 'tm' ] && [ -z "${1##t[t]*}" ]; then
 			${awkopt} ${1} ${TROP_TRACKER} || return 100 # alias not found, awk reports
 		fi
 		func=${tmp}
@@ -405,8 +410,8 @@ trop_tracker_list ()
 trop_mtl_common ()
 {
 	##  $1  - run check_symlink() or do_move()
-	## [$2] - dir prefix for p1
-	## [$3] - repl prefix for p1
+	## [$2] - dir prefix for check_symlink
+	## [$3] - repl prefix for check_symlink
 
 	check_symlink ()
 	{
@@ -715,7 +720,7 @@ for i; do
 		silent=1 ;;
 	-V|-version)
 		echo "$TROP_VERSION" ; exit 0 ;;
-	-terr|-t[ad]|tdauto|-startup|-tdel)
+	-terr|-t[adl]|tdauto|-startup|-tdel)
 		cte=0 ;;
 	-notd)
 		ADD_TORRENT_DONE='no' ;;
@@ -812,6 +817,10 @@ while [ $1 ]; do
 		&& _ "successfully removed \`${2}'"
 		exit 0
 		;;
+	-tl)
+		trop_tracker_list $2
+		test -n "$2" && shift 2 || shift
+		;;
 	-t|-t[0-9]*)
 		trop_private
 		if [ ${#1} -gt 2 ]; then
@@ -828,7 +837,7 @@ while [ $1 ]; do
 		# over-shifting produces garbage
 		test -n "$2" && shift 2 || shift
 		;;
-	-tdl|-tns|-tul|-tdel|-t[lmst]|-p)
+	-tdl|-tns|-tul|-t[mst]|-p)
 		[ -z "$2" ] && die 51 "for \`${1}'"
 		trop_private
 		move=0
@@ -843,9 +852,6 @@ while [ $1 ]; do
 		trop_mv_torrent_location_tracker "$2" "$three" "$4"
 		unset three tmptr
 		test -n "$4" && move=2 || move=1
-		;;
-	-tl)
-		trop_tracker_list $2
 		;;
 	-tns)
 		trop_num_seed_tracker $2

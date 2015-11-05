@@ -1,4 +1,4 @@
-.Dd November 02, 2015
+.Dd November 05, 2015
 .Dt TROP 1
 .Os
 .Sh NAME
@@ -185,9 +185,12 @@ Remove
 from the
 .Pa trackers
 file.
-.It Fl tl Ar tracker-alias
+.It Fl tl Op Ar tracker-alias
 Show all the tracker URLs that are binded to
 .Ar tracker-alias .
+If no argument is supplied,
+.Nm
+will display all tracker-aliases and their tracker URLs.
 .It Fl startup
 Initialize
 .Nm

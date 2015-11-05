@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.4.0
+'trop 1.5.0
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -33,7 +33,9 @@ options:
  -notd                     stop torrent from being added to the torrent-done
                            queue if torrents are automatically being added
  -terr                     show torrents that have errors
+ -tdel <tracker-alias>     remove tracker-alias from trackers file
  -tdl  <tracker-alias>     show info about downloading torrents by tracker
+ -tl   [tracker-alias]     show tracker URLs that are binded to tracker-alias
  -tns  <tracker-alias>     list number of torrents actively seeding by tracker
  -ts   <tracker-alias>     list seeding torrents by tracker
  -tt   <tracker-alias>     show total amount downloaded from tracker
@@ -87,7 +89,7 @@ trop_private ()
 	[ $auser -eq 1 ] && [ $huser -eq 1 ] && return 0
 	[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
 
-	if [ "$1" = 'seth' ] || [ "$1" = 'seta' ]; then
+	if [ "$1" = 'sethp' ] || [ "$1" = 'seta' ]; then
 		. ${srcdir}/tropriv.sh "$@" ; return 0
 	fi
 
@@ -201,6 +203,7 @@ trop_awk ()
 	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${func}"
 	case ${func} in
 	ta)
+		[ ! -f $TROP_TRACKER ] && return 4
 		${awkopt} $1 $2 "$3" ${TROP_TRACKER} || return 31
 		;;
 	tth)
@@ -208,11 +211,15 @@ trop_awk ()
 		[ -n "$3" ] && thash="${srcdir}/.cache/${3}_thash"
 		${awkopt} "$@" ${thash} || return 31
 		;;
+	tl)
+		[ ! -f $TROP_TRACKER ] && return 4
+		${awkopt} "$@" ${TROP_TRACKER} || return 31
+		;;
 	t*)
 		[ ! -f $TROP_TRACKER ] && return 4 # no tracker file
 		[ -z $1 ] && return 41 # no alias
 		local tmp=${func} ; func='tm'
-		if ! [ "$1" = 'tm' ] && [ -z "${1##tt*}" ]; then
+		if ! [ "$1" = 'tm' ] && [ -z "${1##t[t]*}" ]; then
 			${awkopt} ${1} ${TROP_TRACKER} || return 100 # alias not found, awk reports
 		fi
 		func=${tmp}
@@ -390,16 +397,21 @@ trop_tracker_add()
 		st="$tmp"
 		: $((i += 1))
 	done
-	trop_awk 'ta' $a $pt "$st" || die $?
+	echo | trop_awk 'ta' $a $pt "$st" || die $?
 
 	return 0
+}
+
+trop_tracker_list ()
+{
+	echo | trop_awk 'tl' $1 || die $?
 }
 
 trop_mtl_common ()
 {
 	##  $1  - run check_symlink() or do_move()
-	## [$2] - dir prefix for p1
-	## [$3] - repl prefix for p1
+	## [$2] - dir prefix for check_symlink
+	## [$3] - repl prefix for check_symlink
 
 	check_symlink ()
 	{
@@ -708,7 +720,7 @@ for i; do
 		silent=1 ;;
 	-V|-version)
 		echo "$TROP_VERSION" ; exit 0 ;;
-	-terr|-ta|-td|tdauto|-startup)
+	-terr|-t[adl]|tdauto|-startup|-tdel)
 		cte=0 ;;
 	-notd)
 		ADD_TORRENT_DONE='no' ;;
@@ -721,7 +733,7 @@ while :; do
 		test -z "$2" && die 51 "for \`-h'"
 		# regex checks for bad format in host, eg: awd:123g4 -- bad port
 		echo $2 | grep -qE '^-|([[:alnum:]]*:.*[^0-9].*)|(:$)' && die 52 "for \`-h'"
-		trop_private "seth" "$2" ; huser=1
+		trop_private "sethp" "$2" ; huser=1
 		shift 2
 		;;
 	-a)
@@ -740,7 +752,8 @@ done
 while [ $1 ]; do
 	case $1 in
 	-terr)
-		show_tracker_errors ; exit 0
+		show_tracker_errors
+		exit 0
 		;;
 	-dl)
 		trop_private
@@ -786,6 +799,28 @@ while [ $1 ]; do
 		trop_torrent_done "$2" "$3" "$4"
 		exit 0
 		;;
+	-tdel)
+		echo | trop_awk 'tm' $2 || die $?
+		nr=0
+		cat "${TROP_TRACKER}" | while read line; do
+			: $((nr += 1))
+			if [ "${line%% *}" = "$2" ]; then
+				ot=$nr
+				while read sec; do
+					[ ! "${sec%% *}" = '+' ] && break
+					: $((ot += 1))
+				done
+				sed -i '' "${nr},${ot}d" "${TROP_TRACKER}"
+				break
+			fi
+		done \
+		&& _ "successfully removed \`${2}'"
+		exit 0
+		;;
+	-tl)
+		trop_tracker_list $2
+		test -n "$2" && shift 2 || shift
+		;;
 	-t|-t[0-9]*)
 		trop_private
 		if [ ${#1} -gt 2 ]; then
@@ -802,13 +837,13 @@ while [ $1 ]; do
 		# over-shifting produces garbage
 		test -n "$2" && shift 2 || shift
 		;;
-	-t*|-p)
+	-tdl|-tns|-tul|-t[mst]|-p)
 		[ -z "$2" ] && die 51 "for \`${1}'"
 		trop_private
+		move=0
 	case $1 in
 	-tdl)
 		trop_torrent all i | trop_awk 'tdli' $2 || die $?
-		shift 2
 		;;
 	-tm)
 		three=${3}
@@ -816,24 +851,20 @@ while [ $1 ]; do
 		tmptr="transmission-remote $(hpc) -n \"$AUTH\""
 		trop_mv_torrent_location_tracker "$2" "$three" "$4"
 		unset three tmptr
-		test -n "$4" && shift 4 || shift 3
+		test -n "$4" && move=2 || move=1
 		;;
 	-tns)
 		trop_num_seed_tracker $2
-		shift 2
 		;;
 	-ts)
 		trop_seed_info_tracker $2
-		shift 2
 		;;
 	-tul)
 		trop_seed_ulrate_tracker $2
-		shift 2
 		;;
 	-tt)
 		trop_dep 'diff' || die 55 'GNU diff'
 		trop_tracker_total $2
-		shift 2
 		;;
 	-p)
 		shift
@@ -846,6 +877,7 @@ while [ $1 ]; do
 		exit 0
 		;;
 	esac
+		shift $((2 + move))
 	;;
 	-startup)
 		who | awk -v me=$(id -un) \

@@ -16,13 +16,13 @@
 	# set here for default
 	{ AUTH='' ; export AUTH ;}
 
-set_uah ()
+set_hp ()
 { HOSTPORT="$1" ; export HOSTPORT && return 0  || return 1 ;}
 
 set_auth ()
 { AUTH="$1" ; export AUTH && return 0 || return 1 ;}
 
-[ "$1" = 'seth' ] && set_uah "$2"
+[ "$1" = 'sethp' ] && set_hp "$2"
 [ "$1" = 'seta' ] && set_auth "$2"
 
 return 0

@@ -209,7 +209,7 @@ trop_awk ()
 	tth)
 		local thash=
 		[ -n "$3" ] && thash="${srcdir}/.cache/${3}_thash"
-		${awkopt} "$@" ${thash} || return 31
+		${awkopt} "$1" "$2" ${thash} || return 31
 		;;
 	tl)
 		[ ! -f $TROP_TRACKER ] && return 4
@@ -271,7 +271,7 @@ trop_tracker_total ()
 					print $2
 			}') || die 23
 			# if tth returns one, then torrent's idx was shifted
-			trop_awk 'tth' 'check' $h ${1} || { : $((i += 1)) ; continue ;}
+			echo | trop_awk 'tth' 'check' $h ${1} || { : $((i += 1)) ; continue ;}
 			# else it is a new torrent
 			tta=`printf "%s\n%s" "$tta" "$(trop_torrent ${tid} i)"`
 			: $((i += 1))

@@ -63,8 +63,9 @@ BEGIN {
 				if ((op = argv[i+1]) == "check") {
 					c = 1
 					hash = argv[i+2]
+					hashfile = argv[i+3]
 				}
-				i += (c ? 2 : 1)
+				i += (c ? 3 : 2)
 			} else if (argv[i] == "tmo") {
 				tmerr = 0
 				tracker_match_other(argv[i+1], argv[i+2])
@@ -352,8 +353,7 @@ function tracker_total_hashop()
 		do {
 			if ($1 == hash)
 				exit 1
-		} while (getline)
-		return 0
+		} while (getline < hashfile)
 	} else if (op == "add") {
 		do {
 			if ($1 ~ /^Hash:/)

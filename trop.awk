@@ -77,6 +77,7 @@ BEGIN {
 				tracker_match(argv[i+1], argv[i+2])
 				i += 2
 			} else if (argv[i] == "ta") {
+				tmerr = 0
 				tracker_add(argv[i+1], argv[i+2], argv[i+3], argv[i+4])
 				exit 0
 			} else if (argv[i] == "tl") {

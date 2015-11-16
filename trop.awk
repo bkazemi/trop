@@ -134,7 +134,7 @@ BEGIN {
 function assert(bool, msg)
 {
 	if (bool)
-		err("assertion " (msg ? "failed: "msg : "failure"))
+		err("assert(): FAILURE" (msg ? ": "msg : ""))
 
 	return 0
 }

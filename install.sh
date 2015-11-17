@@ -23,8 +23,15 @@ if [ -n "$1" ]; then
 	err "\`$PREFIX' doesn't look like a trop directory\n"\
 	    "\b(if it is, add \`.is_trop_dir' to the directory and restart update)"
 	for file in trop.sh trop.awk trop_torrent_done.sh README LICENSE; do
-		diff -q "$file" "${PREFIX}/${file}" >/dev/null || \
-		{ echo "${file} changed, replacing..." ; cp -f "$file" "$PREFIX" ;}
+		if ! `diff -q "$file" "${PREFIX}/${file}" >/dev/null`; then
+			echo "${file} changed, replacing..."
+			case "$file" in
+			trop*)
+				install -p -m 0550 "$file" "$PREFIX" ;;
+			README|LICENSE)
+				install -p -m 0640 "$file" "$PREFIX" ;;
+			esac
+		fi
 	done
 	hash gzcat 2>/dev/null || err 'need gzcat to check manpage'
 	hash mktemp 2>/dev/null || err 'need mktemp to check manpage'

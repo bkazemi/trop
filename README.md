@@ -73,7 +73,7 @@ In order to use certain features, trop must be called with the -startup flag onc
 Where to add this depends on your login shell. For Bourne-like shells this would be \`~/.profile';
 In Zsh, it is \`~/.zprofile'. Typically you would look for your default shell in /etc/passwd.
 Once you've found out your login shell, add this to the login script:
-```
+```sh
 hash trop 2>&- && trop -startup >/dev/null
 ```
 

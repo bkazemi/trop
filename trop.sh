@@ -165,7 +165,7 @@ trop_make_file ()
 	## $2 - `m' to create
 
 	if [ "$1" = 'r' ]; then
-		[ "$2" = 'm' ] && { printf "$(tmf_mkr)" && return 0 || return 1 ;}
+		[ "$2" = 'm' ] && { printf "$(tmf_mkr)" ; return $? ;}
 		local prefix='regfile'
 		tmf_mkr ()
 		{
@@ -173,12 +173,12 @@ trop_make_file ()
 			return 0 || return 1
 		}
 	elif [ "$1" = 'p' ]; then
-		[ "$2" = 'm' ] && { printf "%s" "$(tmf_mkp)" && return 0 || return 1 ;}
+		[ "$2" = 'm' ] && { printf "%s" "$(tmf_mkp)" ; return $? ;}
 		local prefix='np'
 		tmf_mkp ()
 		{
-			mkfifo "$(tmf_fname)" && \
-			return 0 || return 1
+			mkfifo "$(tmf_fname)"
+			return $(($? ? 1 : 0))
 		}
 	else
 		 die $ERR_TMF_UNKNOWN_FTYPE # unknown filetype
@@ -432,7 +432,8 @@ trop_mtl_common ()
 		done \
 		|| die $ERR_TMTL_MV_FAIL ${tid}
 	}
-	eval "$@" && return 0 || return $?
+	eval "$@"
+	return $?
 }
 
 trop_mv_torrent_location()
@@ -816,7 +817,7 @@ while [ $1 ]; do
 		tmptr="transmission-remote $(hpc) -n \"$AUTH\""
 		trop_mv_torrent_location "$two" "$3"
 		unset two tmptr
-		test -n "$3" && shift 3 || shift 2
+		test -n "$3" ; shift $(($? ? 2 : 3))
 		;;
 	-ns)
 		trop_private
@@ -867,7 +868,7 @@ while [ $1 ]; do
 		;;
 	-tl)
 		trop_tracker_list $2
-		test -n "$2" && shift 2 || shift
+		test -n "$2" ; shift $(($? 1 : 2))
 		;;
 	-t|-t[0-9]*)
 		trop_private
@@ -883,7 +884,7 @@ while [ $1 ]; do
 		fi
 		trop_torrent $1 $2
 		# over-shifting produces garbage
-		test -n "$2" && shift 2 || shift
+		test -n "$2" ; shift $(($? ? 1 : 2))
 		;;
 	-tdl|-tns|-tul|-t[mst]|-p)
 		[ -z "$2" ] && die $ERR_BAD_ARGS "for \`${1}'"
@@ -899,7 +900,7 @@ while [ $1 ]; do
 		tmptr="transmission-remote $(hpc) -n \"$AUTH\""
 		trop_mv_torrent_location_tracker "$2" "$three" "$4"
 		unset three tmptr
-		test -n "$4" && move=2 || move=1
+		test -n "$4" ; move=$(($? ? 1 : 2))
 		;;
 	-tns)
 		trop_num_seed_tracker $2

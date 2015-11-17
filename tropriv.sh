@@ -17,10 +17,10 @@
 	{ AUTH='' ; export AUTH ;}
 
 set_hp ()
-{ HOSTPORT="$1" ; export HOSTPORT && return 0  || return 1 ;}
+{ HOSTPORT="$1" ; export HOSTPORT ; return $? ;}
 
 set_auth ()
-{ AUTH="$1" ; export AUTH && return 0 || return 1 ;}
+{ AUTH="$1" ; export AUTH ; return $? ;}
 
 [ "$1" = 'sethp' ] && set_hp "$2"
 [ "$1" = 'seta' ] && set_auth "$2"

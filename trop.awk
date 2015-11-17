@@ -153,12 +153,12 @@ function err(msg)
 
 function all_ascii(str)
 {
-	return str !~ /[^[:alnum:][:space:][\]~!@#$%^&*()_+-=\/\\;:'"]/
+	return str !~ /[^[:alnum:][:space:][\]~`!@#$%^&*()_+-={}\/\\|;:'",.<>?]/
 }
 
 function get_non_ascii(str)
 {
-	gsub(/[[:alnum:][:space:][\]~!@#$%^&*()_+-=\/\\;:'"]/, "", str)
+	gsub(/[[:alnum:][:space:][\]~`!@#$%^&*()_+-={}\/\\|;:'",.<>?]/, "", str)
 	return str
 }
 

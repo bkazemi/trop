@@ -868,7 +868,7 @@ while [ $1 ]; do
 		;;
 	-tl)
 		trop_tracker_list $2
-		test -n "$2" ; shift $(($? 1 : 2))
+		test -n "$2" ; shift $(($? ? 1 : 2))
 		;;
 	-t|-t[0-9]*)
 		trop_private

@@ -148,7 +148,18 @@ function err(msg)
 	fflush()
 	if ($0) while(getline);
 
-	exit 1
+	exit err_exit = 1
+}
+
+function all_ascii(str)
+{
+	return str !~ /[^[:alnum:][:space:][\]~!@#$%^&*()_+-=\/\\;:'"]/
+}
+
+function get_non_ascii(str)
+{
+	gsub(/[[:alnum:][:space:][\]~!@#$%^&*()_+-=\/\\;:'"]/, "", str)
+	return str
 }
 
 function tracker_is_valid(trackerarr)
@@ -278,12 +289,13 @@ function tracker_seed_info()
 function tracker_seed_ulrate()
 {
 	assert(!$0, "no input")
-	ll = idx = 0
+	longest_name = idx = 0
 	do {
 		if (tracker_match_line()) {
-			sub(/^[[:space:]]*/, "", name)
-			if (length(name) > ll)
-				ll = length(name)
+			sub(/^[[:space:]]*Name: */, "", name)
+			namelen = length(name) - (all_ascii(name) ? 0 : length(get_non_ascii(name)))
+			if (namelen > longest_name)
+				longest_name = namelen
 			while (getline) {
 				if ($0 ~ /^[[:space:]]*Upload Speed:/) {
 					ul = $0
@@ -291,8 +303,9 @@ function tracker_seed_ulrate()
 				}
 			}
 			if (!ul) exit 1
-			sub(/^[[:space:]]*/, "", ul)
-			tsularr[idx++] = name ; tsularr[idx++] = ul
+			sub(/^[[:space:]]*Upload Speed: */, "", ul)
+			tsularr[idx++] = name ; tsularr[idx++] = namelen
+			tsularr[idx++] = ul
 		} else if ($0 ~ /^[[:space:]]*Name:/) {
 			name = $0
 		}
@@ -307,16 +320,18 @@ function seed_ulrate()
 	ll = idx = 0
 	do {
 		if ($0 ~ /^[[:space:]]*Name/) {
-			sularr[idx] = $0
-			sub(/^[[:space:]]*/, "", sularr[idx])
-			if (length(sularr[idx++]) > ll)
-				ll = length(sularr[idx-1])
+			sub(/^[[:space:]]*Name: */, "")
+			sularr[idx++] = $0
+			namelen = length($0) - (all_ascii($0) ? 0 : length(get_non_ascii($0)))
+			sularr[idx++] = namelen
+			if (namelen > longest_name)
+				longest_name = namelen
 			# at current, the UL line is
 			# ten lines below the Name line
 			for (i = 0; i < 10; i++)
 				getline
-			sularr[idx] = $0
-			sub(/^[[:space:]]*/, "", sularr[idx++])
+			sub(/^[[:space:]]*Upload Speed: */, "")
+			sularr[idx++] = $0
 		}
 	} while (getline)
 
@@ -337,11 +352,11 @@ function tracker_total()
 		} else if ($0 ~ /MB/) {
 			tmpnum = $0
 			sub(/MB/, "", tmpnum)
-			tdn += (tmpnum / 1000)
+			tdn += (tmpnum / 1e3)
 		} else if ($0 ~ /KB/) {
 			tmpnum = $0
 			sub(/KB/, "", tmpnum)
-			tdn += (tmpnum / 1000000)
+			tdn += (tmpnum / 1e6)
 		}
 	} while (getline)
 
@@ -541,12 +556,19 @@ function show_tracker_errors()
 }
 
 END {
+	if (err_exit) exit 1
+	if (picked_sul || picked_tsul) {
+		name_id_line = "Name"
+		for (i = 0; i < longest_name - 4; i++)
+			name_id_line = name_id_line" "
+		print name_id_line" Upload Speed"
+	}
 	if (picked_sul) {
-		for (i = 0; i < idx; i += 2) {
-			ldiff = ll - length(sularr[i])
-			for (j = 0; j < ldiff; j++)
+		for (i = 0; i < idx; i += 3) {
+			namediff = longest_name - sularr[i+1]
+			for (j = 0; j < namediff; j++)
 				sularr[i] = sularr[i]" "
-			printf "%s %s\n", sularr[i], sularr[i+1]
+			printf "%s %s\n", sularr[i], sularr[i+2]
 		}
 	}
 	if (picked_tns) {
@@ -554,11 +576,11 @@ END {
 			print tseeding
 	}
 	if (picked_tsul) {
-		for (i = 0; i < idx; i += 2) {
-			ldiff = ll - length(tsularr[i])
-			for (j = 0; j < ldiff; j++)
+		for (i = 0; i < idx; i += 3) {
+			namediff = longest_name - tsularr[i+1]
+			for (j = 0; j < namediff; j++)
 				tsularr[i] = tsularr[i]" "
-			printf "%s %s\n", tsularr[i], tsularr[i+1]
+			printf "%s %s\n", tsularr[i], tsularr[i+2]
 		}
 	}
 	if (picked_tt) {

@@ -936,6 +936,7 @@ while [ $1 ]; do
 			END { exit mecnt }
 		' || break
 		_l 'attempting startup...'
+		eval ${STARTUP_CMD} || ldie 'STARTUP_CMD failed'
 		trop_private 2>>${TROP_LOG_PATH}
 		[ "$ADD_TORRENT_DONE" = 'yes' ] && \
 		{ transmission-remote $(hpc) -n "$AUTH" --torrent-done-script ${srcdir}/trop_torrent_done.sh 2>>${TROP_LOG_PATH} && \

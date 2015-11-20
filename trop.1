@@ -155,23 +155,23 @@ and get more information about a specific torrent from this output.
 .It Fl tt Ar tracker-alias
 Show the total amount downloaded from a tracker set as seen by the trackers (free-leech downloads are not included).
 .It Fl t Ar ID Ar option
-Pass a single option to a torrent.
-The option to supply is any valid option coupled with the tr-remote `-t' switch, however, the leading dash is removed.
+Pass an option to a torrent.
+The option to supply is any valid option coupled with the tr-remote `-t' switch, however, the leading dashes are removed.
 .It Fl td Ar ID Ar action
 Add torrent to a queue that will perform
 .Ar action
 when it completes.
+.Ar action
+is any valid option coupled with the tr-remote `-t' switch, however the leading dashes _must_ be removed.
+This is the same format as the
+.Fl t
+switch.
 The variables ADD_TRACKER_DONE and ADD_TRACKER_DONE_ACT in
 .Pa trop.conf
 are used to control the behavior of this command.
 See
 .Pa README
 for more information.
-Current actions include:
-.Dl Sy rm Op Ar hard
-.Dl Remove torrent when done. Adding `hard' will remove files as well.
-.Dl Sy stop
-.Dl Stop the torrent when done. This will halt seeding of the torrent.
 .It Fl notd
 Stop torrent from being added to the torrent-done queue if torrents are automatically being added with the ADD_TORRENT_DONE option in
 .Pa trop.conf .

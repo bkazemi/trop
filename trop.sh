@@ -308,8 +308,46 @@ trop_torrent ()
 		return 0
 	fi
 
+	local thirdopt=0
+	case $2 in
+	d|downlimit) thirdopt=1 ;;
+	D|no-downlimit);;
+	f|files);;
+	i|info);;
+	ip|info-peers);;
+	ic|info-pieces);;
+	it|info-trackers);;
+	Bh|bandwith-high);;
+	Bn|bandwith-normal);;
+	Bl|bandwith-low);;
+	pr|peers) thirdopt=1 ;;
+	r|remove);;
+	R|remove-and-delete);;
+	reannounce);;
+	move) thirdopt=1 ;;
+	find) thirdopt=1 ;;
+	sr|seedratio) thirdopt=1 ;;
+	SR|no-seedratio);;
+	srd|seedratio-default);;
+	td|tracker-add) thirdopt=1 ;;
+	tr|tracker-remove) thirdopt=1 ;;
+	s|start);;
+	S|stop);;
+	hl|honor-session);;
+	HL|no-honor-session);;
+	u|uplimit) thirdopt=1 ;;
+	U|no-uplimit);;
+	no-utp);;
+	v|verify);;
+	pi|peer-info);;
+	*) die $ERR_TT_UNKNOWN_OPT ;;
+	esac
+
 	[ ${#2} -gt 2 ] && opt="--${2}" || opt="-${2}"
-	transmission-remote $(hpc) -n "$AUTH" -t $1 $opt || die $ERR_TR_FAIL
+	{ [ $thirdopt -eq 1 ]                                 && \
+	transmission-remote $(hpc) -n "$AUTH" -t $1 $opt "$3" || \
+	transmission-remote $(hpc) -n "$AUTH" -t $1 $opt         \
+	;} || die $ERR_TR_FAIL
 
 	return 0
 }
@@ -329,18 +367,7 @@ trop_torrent_done ()
 		cat ${srcdir}/.cache/tdscript | while read tid; do
 			[ "${tid%% *}" = "$1" ] && die $ERR_TTD_SCHG
 		done
-		case $2 in
-		rm)
-			[ "$3" = 'hard' ] && rmcmd='remove-and-delete' || rmcmd='r'
-			echo "$1" ${rmcmd} >> ${srcdir}/.cache/tdscript
-			;;
-		stop)
-			echo "$1" 'S' >> ${srcdir}/.cache/tdscript
-			;;
-		*)
-			die $ERR_TTD_UNKNOWN_ACT
-			;;
-		esac
+		echo "$@" >> ${srcdir}/.cache/tdscript
 		return 0
 	fi
 	local nr=0 tid
@@ -527,6 +554,9 @@ ERR_TMF_UNKNOWN_FTYPE=3
 ERR_PC_STDIN_EMPTY=4
 ERR_PC_NO_INPUT=5
 
+# trop_torrent
+ERR_TT_UNKNOWN_OPT=12
+
 # trop_tracker_total
 ERR_TTT_CACHE=6
 ERR_TTT_TID_FAIL=7
@@ -540,7 +570,6 @@ ERR_CTE_PROBLEM=9
 # trop_tracker_done
 ERR_TTD_ACT_FAIL=10
 ERR_TTD_SCHG=11
-ERR_TTD_UNKNOWN_ACT=12
 
 # trop_mtl_common
 ERR_TMTLC_MV_FAIL=13
@@ -586,6 +615,9 @@ trop_errors ()
 	$ERR_PC_NO_INPUT )
 		_ 'pipe_check(): no input'
 		;;
+	$ERR_TT_UNKNOWN_OPT )
+		_ "trop_torrent(): unknown option, please check tr-remote for valid options."
+		;;
 	$ERR_TTT_CACHE )
 		_ 'trop_tracker_total(): caching error'
 		;;
@@ -603,11 +635,6 @@ trop_errors ()
 		;;
 	$ERR_TTD_SCHG )
 		_ 'trop_tracker_done(): torrent already scheduled for action'
-		;;
-	$ERR_TTD_UNKNOWN_ACT )
-		_ "trop_tracker_done(): unknown action -- actions include:\n" \
-		  " rm [hard] - Remove torrent when done. Adding \`hard' will remove files as well.\n"\
-		  " stop - Stop the torrent when done. This will halt seeding of the torrent."
 		;;
 	$ERR_TMTLC_MV_FAIL )
 		_ 'trop_mtl_common(): failed to move torrent `' "$2" "'"

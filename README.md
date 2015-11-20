@@ -25,9 +25,10 @@ is not guaranteed to work.
 ## Updating:
 
 Starting with trop 1.4.0, you can update the core files through install.sh by supplying
-\`up' or \`update' as an argument. However, trop.conf _did_ change in v1.6 but cannot be
-checked as the checksum is cached for the first time in this update.
-**Please update manually!**
+\`up' or \`update' as an argument.
+Starting with trop 1.6.0, install.sh will also check user modifiable files for updates.
+However, trop.conf _did_ change in v1.6 but cannot be checked as the checksum is cached
+for the first time in this update. **Please update manually!**
 
 ## Storing tr-remote authentication information
 

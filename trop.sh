@@ -484,6 +484,35 @@ pipe_check ()
 	;}
 }
 
+_ ()
+{
+	## $@ - strings to echo
+
+	[ $silent -eq 0 ] && \
+	echo -e ${PROG_NAME}":" "$@" >&2
+
+	return 0
+}
+
+_e ()
+{
+	## $1 - error code
+
+	trop_errors $1 "$2"
+
+	return 0
+}
+
+_l ()
+{
+	## $@ - strings to log
+
+	[ "$TROP_LOG" = 'yes' ] && \
+	_ "$@" 2>>${TROP_LOG_PATH}
+
+	return 0
+}
+
 # largest number: 27
 
 ERR_TR_FAIL=1
@@ -637,19 +666,6 @@ trop_errors ()
 	return 0
 }
 
-trop_dep ()
-{
-	## $1 - cmd-name of trop dependency
-
-	case ${1} in
-	diff)
-		# trop depends on GNU diff options
-		diff --version 2>&1 | sed 1q | grep -q 'GNU' || return 1
-	esac
-
-	return 0
-}
-
 die ()
 {
 	## $1 - error code
@@ -665,6 +681,19 @@ ldie ()
 	[ -n "$1" ] && [ $silent -eq 0 ] && \
 	trop_errors $1 "$2" 2>>${TROP_LOG_PATH}
 	kill -6 $toppid
+}
+
+trop_dep ()
+{
+	## $1 - cmd-name of trop dependency
+
+	case ${1} in
+	diff)
+		# trop depends on GNU diff options
+		diff --version 2>&1 | sed 1q | grep -q 'GNU' || return 1
+	esac
+
+	return 0
 }
 
 check_tracker_errors ()
@@ -698,35 +727,6 @@ show_tracker_errors ()
 	return 0
 }
 
-_ ()
-{
-	## $@ - strings to echo
-
-	[ $silent -eq 0 ] && \
-	echo -e ${PROG_NAME}":" "$@" >&2
-
-	return 0
-}
-
-_e ()
-{
-	## $1 - error code
-
-	trop_errors $1 "$2"
-
-	return 0
-}
-
-_l ()
-{
-	## $@ - strings to log
-
-	[ "$TROP_LOG" = 'yes' ] && \
-	_ "$@" 2>>${TROP_LOG_PATH}
-
-	return 0
-}
-
 # --------------- main --------------- #
 unset _
 PROG_NAME=${0##*/}
@@ -756,10 +756,11 @@ srcdir="$(echo $(file -hb $0) | sed -r -e "s/^symbolic link to //i;s/\/+[^\/]+$/
 TROP_TRACKER=${srcdir}/trackers
 auser=0 huser=0 PRIVATE=0 cte=1
 . ${srcdir}/trop.conf # various user options
-[ "$TROP_LOG" = 'yes' ] && : ${TROP_LOG_PATH:=${srcdir}/trop.log}
-[ "$TROP_LOG" = 'no'  ] && TROP_LOG_PATH=/dev/null
+[ "$TROP_LOG" = 'yes' ] && : ${TROP_LOG_PATH:=${srcdir}/trop.log} \
+|| TROP_LOG_PATH=/dev/null
 
-for i; do
+for i;
+do
 	case $i in
 	-p)
 		break ;;
@@ -798,7 +799,7 @@ done
 [ "$CHECK_TRACKER_ERRORS" = 'yes' ] && [ $silent -eq 0 ] \
 && [ $cte -eq 1 ] && check_tracker_errors
 
-while [ $1 ]; do
+while [ "$1" != '' ]; do
 	case $1 in
 	-terr)
 		show_tracker_errors

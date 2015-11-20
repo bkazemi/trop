@@ -298,6 +298,7 @@ trop_torrent ()
 {
 	## $1   - torrent ID or single opt
 	## [$2] - option paired with torrent ID
+	## [$3] - sub-option
 
 	[ -z "$1" ] && usage
 	local opt
@@ -374,7 +375,7 @@ trop_torrent_done ()
 	cat ${srcdir}/.cache/tdscript | while read id_and_cmd; do
 		: $((nr += 1))
 		if [ "$(trop_torrent ${id_and_cmd%% *} i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ]; then
-			eval trop_torrent $id_and_cmd || ldie $ERR_TTD_ACT_FAIL $tid
+			eval trop_torrent $id_and_cmd 2>>${TROP_LOG_PATH} || ldie $ERR_TTD_ACT_FAIL $tid
 			_l "successfully processed command on torrent ${id_and_cmd%% *}, removing ..."
 			sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
 		fi

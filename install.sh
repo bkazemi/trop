@@ -34,17 +34,20 @@ if [ -n "$1" ]; then
 		fi
 	done
 	# don't edit!
-	CUR_TROPCONF_SHA256='e8f2435d58d31a846658dfc4c99226724d478c6858c2062f8dcdcb0f4253097b'
+	CUR_TROPCONF_SHA256='688f61a3743a2d181dc1ead01230a11863f942d12695fb4d9c9e7ad1bd709843'
 	CUR_TROPRIV_SHA256='04e95cfc0391674f0591a5e7f7a2ca995a5d16afffc811ac09747d511cd00549'
 	hash sha256 2>/dev/null || err 'need sha256 to check trop.conf and tropriv.sh'
 	tropconf_sha256=`sha256 -q trop.conf`
 	tropriv_sha256=`sha256 -q tropriv.sh`
 	[ "$tropconf_sha256" != "$CUR_TROPCONF_SHA256" ] && err 'trop.conf changed, cannot check for updates'
 	[ "$tropriv_sha256" != "$CUR_TROPRIV_SHA256" ] && err 'tropriv.sh changed, cannot check for updates'
+	[ ! -e ${PREFIX}/.cache ] && mkdir ${PREFIX}/.cache
 	[ ! -e ${PREFIX}/.cache/conf_chksum ] && echo "$tropconf_sha256" > ${PREFIX}/.cache/conf_chksum
 	[ ! -e ${PREFIX}/.cache/priv_chksum ] && echo "$tropriv_sha256" > ${PREFIX}/.cache/priv_chksum
-	[ "$(cat ${PREFIX}/.cache/conf_chksum)" != "$tropconf_sha256" ] && echo 'trop.conf changed, please update this file manually'
-	[ "$(cat ${PREFIX}/.cache/priv_chksum)" != "$tropriv_sha256" ] && echo 'tropriv.sh changed, please update this file manually'
+	[ "$(cat ${PREFIX}/.cache/conf_chksum)" != "$tropconf_sha256" ] && echo 'trop.conf changed, please update this file manually' \
+	&& echo "$tropconf_sha256" > ${PREFIX}/.cache/conf_chksum
+	[ "$(cat ${PREFIX}/.cache/priv_chksum)" != "$tropriv_sha256" ] && echo 'tropriv.sh changed, please update this file manually' \
+	&& echo "$tropriv_sha256" > ${PREFIX}/.cache/priv_chksum
 	hash gzcat 2>/dev/null || err 'need gzcat to check manpage'
 	hash mktemp 2>/dev/null || err 'need mktemp to check manpage'
 	tmpfile=`mktemp`

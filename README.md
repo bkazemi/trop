@@ -25,8 +25,10 @@ is not guaranteed to work.
 ## Updating:
 
 Starting with trop 1.4.0, you can update the core files through install.sh by supplying
-\`up' or \`update' as an argument. This currently does _not_ update files
-that the user might have edited themselves (tropriv.sh, trop.conf)
+\`up' or \`update' as an argument.
+Starting with trop 1.6.0, install.sh will also check user modifiable files for updates.
+However, trop.conf _did_ change in v1.6 but cannot be checked as the checksum is cached
+for the first time in this update. **Please update manually!**
 
 ## Storing tr-remote authentication information
 
@@ -73,7 +75,7 @@ In order to use certain features, trop must be called with the -startup flag onc
 Where to add this depends on your login shell. For Bourne-like shells this would be \`~/.profile';
 In Zsh, it is \`~/.zprofile'. Typically you would look for your default shell in /etc/passwd.
 Once you've found out your login shell, add this to the login script:
-```
+```sh
 hash trop 2>&- && trop -startup >/dev/null
 ```
 

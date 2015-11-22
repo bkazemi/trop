@@ -875,7 +875,7 @@ while [ "$1" != '' ]; do
 		[ "$1" = 'tdauto' ] && \
 		{ [ "$ADD_TORRENT_DONE" = 'yes' ] || ldie $ERR_TDAUTO_DISABLED ;} \
 		&& trop_private 2>>${TROP_LOG_PATH}
-		trop_torrent_done "$2" "$3" "$4"
+		trop_torrent_done "$@"
 		exit 0
 		;;
 	-tdel)

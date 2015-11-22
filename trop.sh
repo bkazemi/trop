@@ -346,6 +346,7 @@ trop_torrent ()
 
 	[ ${#2} -gt 2 ] && opt="--${2}" || opt="-${2}"
 	{ [ $thirdopt -eq 1 ]                                 && \
+	ttshift=1                                             && \
 	transmission-remote $(hpc) -n "$AUTH" -t $1 $opt "$3" || \
 	transmission-remote $(hpc) -n "$AUTH" -t $1 $opt         \
 	;} || die $ERR_TR_FAIL
@@ -911,9 +912,11 @@ while [ "$1" != '' ]; do
 		else
 			shift
 		fi
-		trop_torrent $1 $2
+		ttshift=0
+		trop_torrent "$@"
 		# over-shifting produces garbage
-		test -n "$2" ; shift $(($? ? 1 : 2))
+		test -n "$2" ; shift $(($? ? 1 : $((ttshift ? 3 : 2))))
+		unset ttshift
 		;;
 	-tdl|-tns|-tul|-t[mst]|-p)
 		[ -z "$2" ] && die $ERR_BAD_ARGS "for \`${1}'"

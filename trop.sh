@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.6.0
+'trop 1.6.1
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -346,6 +346,7 @@ trop_torrent ()
 
 	[ ${#2} -gt 2 ] && opt="--${2}" || opt="-${2}"
 	{ [ $thirdopt -eq 1 ]                                 && \
+	ttshift=1                                             && \
 	transmission-remote $(hpc) -n "$AUTH" -t $1 $opt "$3" || \
 	transmission-remote $(hpc) -n "$AUTH" -t $1 $opt         \
 	;} || die $ERR_TR_FAIL
@@ -874,7 +875,8 @@ while [ "$1" != '' ]; do
 		[ "$1" = 'tdauto' ] && \
 		{ [ "$ADD_TORRENT_DONE" = 'yes' ] || ldie $ERR_TDAUTO_DISABLED ;} \
 		&& trop_private 2>>${TROP_LOG_PATH}
-		trop_torrent_done "$2" "$3" "$4"
+		shift
+		trop_torrent_done "$@"
 		exit 0
 		;;
 	-tdel)
@@ -911,9 +913,11 @@ while [ "$1" != '' ]; do
 		else
 			shift
 		fi
-		trop_torrent $1 $2
+		ttshift=0
+		trop_torrent "$@"
 		# over-shifting produces garbage
-		test -n "$2" ; shift $(($? ? 1 : 2))
+		test -n "$2" ; shift $(($? ? 1 : $((ttshift ? 3 : 2))))
+		unset ttshift
 		;;
 	-tdl|-tns|-tul|-t[mst]|-p)
 		[ -z "$2" ] && die $ERR_BAD_ARGS "for \`${1}'"

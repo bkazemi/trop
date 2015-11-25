@@ -522,7 +522,7 @@ function show_tracker_errors()
 			printf "%s\n%s\n", $2, id
 		} else if ($2 ~ /^Id:/) {
 			id = $0
-		} else if ($2 ~ /^(Location)|(Error):/) {
+		} else if ($2 ~ /^(Location)|(Error)|(Tracker gave an error):/) {
 			print $0
 		}
 	} while (getline)

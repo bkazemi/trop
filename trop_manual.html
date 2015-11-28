@@ -1,161 +1,201 @@
-<HTML>
-<HEAD>
-<TITLE>trop - transmission-remote operations</TITLE>
-</HEAD>
-<BODY>
-<H1>trop - transmission-remote operations</H1>
-<HR>
-<PRE>
-<!-- Manpage converted by man2html 3.0.1 -->
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC
+	"-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 
-</PRE>
-<H2>DESCRIPTION</H2><PRE>
-     <B>trop</B> is a shell script for Unix-like systems designed to make interaction
-     with <B>transmission-remote(1)</B> easier.  It is written in pure POSIX Bourne
-     shell and AWK; This allows <B>trop</B> to be used on nearly any Unix system that
-     transmission can be built on.  A nice feature of <B>trop</B> is the ability to
-     save the default host and authentication information in the <I>tropriv.sh</I>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style type="text/css">
+	BODY {font-family: arial, helvetica, sans-serif; }
+	SPAN.bold { color: navy; }
+	SPAN.underline { color: purple; }
+	A:link {color: blue; text-decoration: none; }
+	A:visited {color: blue; text-decoration: none; }
+	A:hover {text-decoration: underline; }
+</style>
+<title>Man Page Lookup - trop
+</title>
+</head>
+<body>
+<pre>
+TROP(1)                 FreeBSD General Commands Manual                TROP(1)
+
+<span class="bold">NAME</span>
+     <span class="bold">trop</span> - transmission-remote operations
+
+<span class="bold">SYNOPSIS</span>
+     <span class="bold">trop</span> [<span class="bold">-h</span> <span class="underline">HOST:PORT</span>] [<span class="bold">-a</span> <span class="underline">USER:PASS</span>] <span class="underline">options</span> <span class="underline">...</span>
+
+<span class="bold">DESCRIPTION</span>
+     <span class="bold">trop</span> is a shell script for Unix-like systems designed to make interaction
+     with transmission-remote(1) easier.  It is written in pure POSIX Bourne
+     shell and AWK; This allows <span class="bold">trop</span> to be used on nearly any Unix system that
+     transmission can be built on.  A nice feature of <span class="bold">trop</span> is the ability to
+     save the default host and authentication information in the <span class="underline">tropriv.sh</span>
      file.  That way you don't have to supply this information on the command-
      line every time you need to use tr-remote.  It also features options to
-     make common tr-remote tasks much quicker to type, like the <B>-t</B> switch,
+     make common tr-remote tasks much quicker to type, like the <span class="bold">-t</span> switch,
      which allows you to pass an option to a torrent without the dash before
      the flag.  This simple shorthand makes using common commands like
-           transmission-remote <B>-t</B> <I>ID</I> <B>-i</B>
+           transmission-remote <span class="bold">-t</span> <span class="underline">ID</span> <span class="bold">-i</span>
      much less tedious on the day-to-day.
 
-     The other goal of <B>trop</B> is to provide statistical information about
+     The other goal of <span class="bold">trop</span> is to provide statistical information about
      torrents in a clean fashion.  An example of this need is when the user
      would like to view information about the upload rates of the torrents
-     currently seeding.  <B>transmission-remote(1)</B> indeed provides a way to get
+     currently seeding.  transmission-remote(1) indeed provides a way to get
      this with the `-t all -l' sequence, but it is more information than
-     needed, and the format is unwieldy.  To combat this issue, <B>trop</B> has the
-     <B>-sul</B> switch to display the name and upload rate of seeding torrents in a
-     clean format.  <B>trop</B> also has the nifty feature to display torrent
+     needed, and the format is unwieldy.  To combat this issue, <span class="bold">trop</span> has the
+     <span class="bold">-sul</span> switch to display the name and upload rate of seeding torrents in a
+     clean format.  <span class="bold">trop</span> also has the nifty feature to display torrent
      information from a set of tracker URLs.  To achieve this, you define an
-     alias that binds to one or more tracker URLs in the <I>tracker</I> file
-     distributed with <B>trop</B>.  See <I>README</I> for more information.
+     alias that binds to one or more tracker URLs in the <span class="underline">tracker</span> file
+     distributed with <span class="bold">trop</span>.  See <span class="underline">README</span> for more information.
 
-
-</PRE>
-<H2>OPTIONS</H2><PRE>
-     <B>-h</B> <I>HOST:PORT</I>
-             Set the host and-or port that <B>transmission-remote(1)</B> will attempt
-             to connect to.  You may set either the <I>HOST</I> or <I>PORT</I> options
+<span class="bold">OPTIONS</span>
+     <span class="bold">-h</span> <span class="underline">HOST:PORT</span>
+             Set the host and-or port that transmission-remote(1) will attempt
+             to connect to.  You may set either the <span class="underline">HOST</span> or <span class="underline">PORT</span> options
              separately, or both with the colon format.  You may NOT separate
              them with a space.  The default may be set in the HOSTPORT
-             variable in the <I>tropriv.sh</I> file.
+             variable in the <span class="underline">tropriv.sh</span> file.
 
-     <B>-a</B> <I>USER:PASS</I>
-             Set the user-name and password that <B>transmission-remote(1)</B> will
+     <span class="bold">-a</span> <span class="underline">USER:PASS</span>
+             Set the user-name and password that transmission-remote(1) will
              attempt to connect with.  The default may be set in the AUTH
-             variable in the <I>tropriv.sh</I> file.
+             variable in the <span class="underline">tropriv.sh</span> file.
 
-     <B>-p</B> <I>options</I> <I>...</I>
-             Pass flags directly to <B>transmission-remote(1)</B>.  All successive
-             flags will be interpreted as <B>transmission-remote(1)</B> flags.  No
-             <B>trop</B> options may be supplied after this flag.
+     <span class="bold">-p</span> <span class="underline">options</span> <span class="underline">...</span>
+             Pass flags directly to transmission-remote(1).  All successive
+             flags will be interpreted as transmission-remote(1) flags.  No
+             <span class="bold">trop</span> options may be supplied after this flag.
 
-     <B>-m</B> <I>base</I> [<I>new-base</I>]
-             Move all the torrents whose directories start with <I>base</I> to
-             <I>new-base</I>.  The <I>base</I> is the beginning of the path of any matching
+     <span class="bold">-m</span> <span class="underline">base</span> [<span class="underline">new-base</span>]
+             Move all the torrents whose directories start with <span class="underline">base</span> to
+             <span class="underline">new-base</span>.  The <span class="underline">base</span> is the beginning of the path of any matching
              torrents location as stored in the Transmission session's
              records.  This may be the absolute path that the torrents file(s)
              are stored in, or a relative path to the current working
              directory of where your Transmission session was invoked
+             (generally $HOME).  For example, the torrent with the ID 1 may
+             have it's location stored in Transmission as `dir1/dir2'.
+             Because this is not an absolute path, (ie. the path doesn't start
+             with `/') Transmission will internally append the CWD in which it
+             was started in.  Let's say that Transmission was started in $HOME
+             which expands to /home/user.  Torrent 1 will then be seen as
+             being in $HOME/dir1/dir2, or /home/user/dir1/dir2.  This is good
+             when you have to move your torrents to a new user's home path,
+             because you don't have to change the base directory of the
+             torrents.  But what if you do have torrents with a hard-coded
+             $HOME, or an otherwise undesirable base path?  If you have
+             hundreds of hard-coded torrents whose locations have changed from
+             /home/user/ to a different user's $HOME, /home/user2, moving each
+             file's location in Transmission can be tedious.  <span class="bold">-m</span> was designed
              to move torrents like these to a new base easily.  To aid with
              the example, to move all torrents whose base is stored as
              /home/user/ to /home/user2, the following command sequence would
              be used:
                    trop -m /home/user /home/user2
              Now, all torrents with the base /home/user/ have been updated to
-             point to /home/user2/.  If you omit <I>new-base</I>, all matching
-             torrents' <I>base</I> will be stripped from their location.  One
+             point to /home/user2/.  If you omit <span class="underline">new-base</span>, all matching
+             torrents' <span class="underline">base</span> will be stripped from their location.  One
              important thing to note is that currently if you attempt to
              remove the base and the resulting relative path is still the same
              Transmission will _not_ update it to the relative path. However,
              once you do move the base, you can strip it to a relative path
              and not have to fuss if you move bases again.
 
-     <B>-tm</B> <I>tracker-alias</I>
-             Fuctionally equivalent to <B>-m</B> but filter out torrents not matching
-             the trackers listed under <I>tracker-alias</I>
+     <span class="bold">-tm</span> <span class="underline">tracker-alias</span>
+             Fuctionally equivalent to <span class="bold">-m</span> but filter out torrents not matching
+             the trackers listed under <span class="underline">tracker-alias</span>
 
-     <B>-dl</B>     Show information about downloading torrents.  This will include
+     <span class="bold">-dl</span>     Show information about downloading torrents.  This will include
              torrents that are both `uploading' and `downloading' information.
 
-     <B>-tdl</B> <I>tracker-alias</I>
-             Fuctionally equivalent to <B>-dl</B> but filter out torrents not
-             matching the trackers listed under <I>tracker-alias</I>
+     <span class="bold">-tdl</span> <span class="underline">tracker-alias</span>
+             Fuctionally equivalent to <span class="bold">-dl</span> but filter out torrents not
+             matching the trackers listed under <span class="underline">tracker-alias</span>
 
-     <B>-ns</B>     List number of torrents seeding.  This does NOT include torrents
+     <span class="bold">-ns</span>     List number of torrents seeding.  This does NOT include torrents
              that are both `uploading' and `downloading' information.
 
-     <B>-tns</B> <I>tracker-alias</I>
-             Fuctionally equivalent to <B>-ns</B> but filter out torrents not
-             matching the trackers listed under <I>tracker-alias</I>
+     <span class="bold">-tns</span> <span class="underline">tracker-alias</span>
+             Fuctionally equivalent to <span class="bold">-ns</span> but filter out torrents not
+             matching the trackers listed under <span class="underline">tracker-alias</span>
 
-     <B>-si</B>     Show information about seeding torrents.  This flag will display
+     <span class="bold">-si</span>     Show information about seeding torrents.  This flag will display
              all information about each seeding torrent (equivalent to `-t id
              -i' in tr-remote).
 
-     <B>-sul</B>    List seeding torrents and their upload rates.  This flag will
+     <span class="bold">-sul</span>    List seeding torrents and their upload rates.  This flag will
              display the `Name' and `Upload' lines in a tabular format.
 
-     <B>-ta</B> [<I>tracker-alias</I>]
-             Add a tracker alias to the <I>tracker</I> file interactively.  This
+     <span class="bold">-ta</span> [<span class="underline">tracker-alias</span>]
+             Add a tracker alias to the <span class="underline">tracker</span> file interactively.  This
              option will ask the user to enter a tracker alias, the primary
              tracker to be associated with this alias, whether or not to add
              any secondary trackers and how many, then each secondary tracker
              on separate lines.
 
-     <B>-tul</B> <I>tracker-alias</I>
-             Functionally equivalent to the <B>-si</B> flag, but gets seeding
+     <span class="bold">-tul</span> <span class="underline">tracker-alias</span>
+             Functionally equivalent to the <span class="bold">-si</span> flag, but gets seeding
              torrents by tracker-alias.
 
-     <B>-ts</B> <I>tracker-alias</I>
+     <span class="bold">-ts</span> <span class="underline">tracker-alias</span>
              List information about seeding torrents by tracker-alias. The
+             information is more terse than that of <span class="bold">-si</span>, this is intentional;
+             This switch was designed to filter out tracker-specific torrents
+             in <span class="bold">-si</span>, and get more information about a specific torrent from
+             this output.
 
-     <B>-td</B> <I>ID</I> <I>action</I>
-             Add torrent to a queue that will perform <I>action</I> when it
-             completes.  <I>action</I> is any valid option coupled with the tr-remote
+     <span class="bold">-tt</span> <span class="underline">tracker-alias</span>
+             Show the total amount downloaded from a tracker set as seen by
+             the trackers (free-leech downloads are not included).
+
+     <span class="bold">-t</span> <span class="underline">ID</span> <span class="underline">option</span>
+             Pass an option to a torrent.  The option to supply is any valid
+             option coupled with the tr-remote `-t' switch, however, the
+             leading dashes are removed.
+
+     <span class="bold">-td</span> <span class="underline">ID</span> <span class="underline">action</span>
+             Add torrent to a queue that will perform <span class="underline">action</span> when it
+             completes.  <span class="underline">action</span> is any valid option coupled with the tr-remote
              `-t' switch, however the leading dashes _must_ be removed.  This
-             is the same format as the <B>-t</B> switch.  The variables
-             ADD_TRACKER_DONE and ADD_TRACKER_DONE_ACT in <I>trop.conf</I> are used
-             to control the behavior of this command.  See <I>README</I> for more
+             is the same format as the <span class="bold">-t</span> switch.  The variables
+             ADD_TRACKER_DONE and ADD_TRACKER_DONE_ACT in <span class="underline">trop.conf</span> are used
+             to control the behavior of this command.  See <span class="underline">README</span> for more
              information.
 
-     <B>-notd</B>   Stop torrent from being added to the torrent-done queue if
+     <span class="bold">-notd</span>   Stop torrent from being added to the torrent-done queue if
              torrents are automatically being added with the ADD_TORRENT_DONE
-             option in <I>trop.conf</I>.
+             option in <span class="underline">trop.conf</span>.
 
-     <B>-terr</B>   Show the name, ID, location and error field of torrents that show
-             signs of an error.  <B>trop</B> will warn the user if it detects a
+     <span class="bold">-terr</span>   Show the name, ID, location and error field of torrents that show
+             signs of an error.  <span class="bold">trop</span> will warn the user if it detects a
              torrent error.
 
-     <B>-tdel</B> <I>tracker-alias</I>
-             Remove <I>tracker-alias</I> from the <I>trackers</I> file.
+     <span class="bold">-tdel</span> <span class="underline">tracker-alias</span>
+             Remove <span class="underline">tracker-alias</span> from the <span class="underline">trackers</span> file.
 
-     <B>-tl</B> [<I>tracker-alias</I>]
-             Show all the tracker URLs that are binded to <I>tracker-alias</I>.  If
-             no argument is supplied, <B>trop</B> will display all tracker-aliases
+     <span class="bold">-tl</span> [<span class="underline">tracker-alias</span>]
+             Show all the tracker URLs that are binded to <span class="underline">tracker-alias</span>.  If
+             no argument is supplied, <span class="bold">trop</span> will display all tracker-aliases
              and their tracker URLs.
 
-     <B>-startup</B>
-             Initialize <B>trop</B> defaults upon login. See <I>README</I> for more
+     <span class="bold">-startup</span>
+             Initialize <span class="bold">trop</span> defaults upon login. See <span class="underline">README</span> for more
              information.
 
-     <B>-q</B>      Suppress all message output from <B>trop</B>.
+     <span class="bold">-q</span>      Suppress all message output from <span class="bold">trop</span>.
 
-     <B>-V</B> <B>-version</B>
+     <span class="bold">-V</span> <span class="bold">-version</span>
              Show version information.  This includes the latest
-             <B>transmission-remote(1)</B> version that <B>trop</B> was tested against.
+             transmission-remote(1) version that <span class="bold">trop</span> was tested against.
 
-     <B>-help</B>   Print a short description of the options on the command-line.
+     <span class="bold">-help</span>   Print a short description of the options on the command-line.
 
-
-</PRE>
-<H2>EXAMPLES</H2><PRE>
+<span class="bold">EXAMPLES</span>
      Show details about the torrent with the ID 1:
 
            trop -t1 i
@@ -172,34 +212,35 @@
 
            trop -h example.org:6789 -a bob:secretpass -sul
 
+<span class="bold">ENVIRONMENT</span>
+     HOSTPORT    Host that transmission-remote uses to connect to the RPC
+                 session.
 
-</PRE>
-<H2>FILES</H2><PRE>
-     <I>install.sh</I>  <B>trop</B> installation script.
-     <I>trop.sh</I>     Main program script.
-     <I>trop.conf</I>   Configuration file.
-     <I>trop</I><B>_</B><I>torrent</I><B>_</B><I>done.sh</I>
+     AUTH        Authorization information transmission-remote(1) uses to
+                 connect to the RPC session.
+
+     TROP_TRACKER
+                 Contains the path to the <span class="bold">trop</span> AWK file.
+
+     LC_ALL      <span class="bold">trop</span> sets the locale variables to `POSIX'.
+
+<span class="bold">FILES</span>
+     <span class="underline">install.sh</span>  <span class="bold">trop</span> installation script.
+     <span class="underline">trop.sh</span>     Main program script.
+     <span class="underline">trop.conf</span>   Configuration file.
+     <span class="underline">trop</span><span class="bold">_</span><span class="underline">torrent</span><span class="bold">_</span><span class="underline">done.sh</span>
                  Glue file that Transmission runs upon torrent completion.
-     <I>tropriv.sh</I>  Used to store private user information.
-     <I>trop.awk</I>    AWK script used for various <B>trop</B> procedures.
-     <I>trackers</I>    Contains the tracker alias definitions.
+     <span class="underline">tropriv.sh</span>  Used to store private user information.
+     <span class="underline">trop.awk</span>    AWK script used for various <span class="bold">trop</span> procedures.
+     <span class="underline">trackers</span>    Contains the tracker alias definitions.
 
-
-</PRE>
-<H2>AUTHORS</H2><PRE>
+<span class="bold">AUTHORS</span>
      bkazemi &lt;bkazemi@users.sf.net&gt;
 
+<span class="bold">SEE</span> <span class="bold">ALSO</span>
+     transmission-remote(1)
 
-</PRE>
-<H2>SEE ALSO</H2><PRE>
-     <B>transmission-remote(1)</B>
-
-
-</PRE>
-<HR>
-<ADDRESS>
-Man(1) output converted with
-<a href="http://www.oac.uci.edu/indiv/ehood/man2html.html">man2html</a>
-</ADDRESS>
-</BODY>
-</HTML>
+FreeBSD 11.0-CURRENT           November 20, 2015          FreeBSD 11.0-CURRENT
+</pre>
+</body>
+</html>

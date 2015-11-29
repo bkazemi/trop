@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.6.2
+'trop 1.6.3
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -908,7 +908,7 @@ while [ "$1" != '' ]; do
 			one=${1#-t}
 			echo ${one} | grep -qE '[^0-9,-]' && die $ERR_BAD_FORMAT "for \`-t'"
 			shift
-			savenextopts="$(echo "$@" | sed -r 's/[^\\]&|$/\\&\1/g')"
+			savenextopts="$(echo "$@" | sed -r 's/[^\\](&|$)/\\&\1/g')"
 			eval set -- ${one} "$savenextopts"
 			unset one savenextopts
 		else

@@ -908,7 +908,7 @@ while [ "$1" != '' ]; do
 			one=${1#-t}
 			echo ${one} | grep -qE '[^0-9,-]' && die $ERR_BAD_FORMAT "for \`-t'"
 			shift
-			savenextopts="$(echo "$@" | sed -r 's/[^\\]&|$/\\&\1/g')"
+			savenextopts="$(echo "$@" | sed -r 's/[^\\](&|$)/\\&\1/g')"
 			eval set -- ${one} "$savenextopts"
 			unset one savenextopts
 		else

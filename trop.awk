@@ -142,7 +142,7 @@ function assert(bool, msg)
 function err(msg)
 {
 	if (!silent)
-		print progname": "msg > "/dev/stderr"
+		print progname":", msg > "/dev/stderr"
 
 	# drain stdin to prevent a broken pipe
 	fflush()
@@ -278,7 +278,7 @@ function tracker_add(alias, primary_tracker, secondary_trackers, tracker_file)
 	secarr[0] = primary_tracker
 	tracker_match_other(alias, secarr, tracker_file)
 	delete secarr[0]
-	print alias" : "primary_tracker >> tracker_file
+	print alias, ":", primary_tracker >> tracker_file
 	if (secondary_trackers)
 		for (i in secarr)
 			printf "\t+ "secarr[i]"\n" >> tracker_file
@@ -306,7 +306,7 @@ function tracker_seed_info()
 function tracker_seed_ulrate()
 {
 	assert(!$0, "no input")
-	longest_name = idx = 0
+	longest_name = idx = total = 0
 	do {
 		if (tracker_match_line()) {
 			sub(/^[[:space:]]*Name: */, "", name)
@@ -316,6 +316,14 @@ function tracker_seed_ulrate()
 			while (getline) {
 				if ($0 ~ /^[[:space:]]*Upload Speed:/) {
 					ul = $0
+					if ($4 == "TB/s")
+						total += ($3 * 1e9)
+					else if ($4 == "GB/s")
+						total += ($3 * 1e6)
+					else if ($4 == "MB/s")
+						total += ($3 * 1e3)
+					else
+						total += ($3 / 1)
 					break
 				}
 			}
@@ -402,7 +410,7 @@ function tracker_total_hashop()
 function tracker_total_details()
 {
 	assert(!$0, "no input")
-	FS="  +"
+	FS = "  +"
 	do {
 		if ($2 ~ /^Magnet:/)
 			if (tracker_match_line())
@@ -423,7 +431,7 @@ function tracker_num_seed()
 {
 	assert(!$0, "no input")
 	tseeding = 0
-	FS="  +"
+	FS = "  +"
 	do {
 		if ($2 ~ /^Magnet:/)
 			if (tracker_match_line())
@@ -439,7 +447,7 @@ function tracker_num_seed()
 function tracker_dl_info()
 {
 	assert(!$0, "no input")
-	FS="  +"
+	FS = "  +"
 	do {
 		if ($2 ~ /^Magnet:/) {
 			if (tracker_match_line()) {
@@ -470,7 +478,7 @@ function tracker_dl_info()
 function dl_info()
 {
 	assert(!$0, "no input")
-	FS="  +"
+	FS = "  +"
 	do {
 		if ($2 ~ /^State: (Download)|(Up & Down)/) {
 			printf "%s\n%s\n%s\n", name, id, $0
@@ -535,7 +543,7 @@ function mv_torrent_location()
 
 function show_tracker_errors()
 {
-	FS="  +"
+	FS = "  +"
 	do {
 		if ($2 ~ /^Name:/) {
 			printf "%s\n%s\n", $2, id
@@ -577,17 +585,33 @@ function show_tracker_errors()
 END {
 	if (err_exit) exit 1
 	if (picked_sul || picked_tsul) {
+		if (!longest_name) exit 0 # nothing seeding
+		CONVFMT = "%.2f"
 		name_id_line = "Name"
 		for (i = 0; i < longest_name - 4; i++)
 			name_id_line = name_id_line" "
-		print name_id_line" Upload Speed"
-	}
-	if (picked_sul) {
-		for (i = 0; i < idx; i += 3) {
-			namediff = longest_name - sularr[i+1]
-			for (j = 0; j < namediff; j++)
-				sularr[i] = sularr[i]" "
-			printf "%s %s\n", sularr[i], sularr[i+2]
+		print name_id_line, "Upload Speed"
+		if (picked_sul) {
+			for (i = 0; i < idx; i += 3) {
+				namediff = longest_name - sularr[i+1]
+				for (j = 0; j < namediff; j++)
+					sularr[i] = sularr[i]" "
+				printf "%s %s\n", sularr[i], sularr[i+2]
+			}
+		} else {
+			for (i = 0; i < idx; i += 3) {
+				namediff = longest_name - tsularr[i+1]
+				for (j = 0; j < namediff; j++)
+					tsularr[i] = tsularr[i]" "
+				printf "%s %s\n", tsularr[i], tsularr[i+2]
+			}
+		}
+		if (total) {
+				sub(/\..*/, "", total) # remove fractional part
+				total_line = "Total: "
+				for (i = 0; i < longest_name - 7; i++)
+					total_line = total_line" "
+				printf "\n%s %s\n", total_line, kb_conv(total)
 		}
 		if (total) {
 			sub(/\..*/, "", total) # remove fractional part
@@ -601,17 +625,9 @@ END {
 		if (tseeding)
 			print tseeding
 	}
-	if (picked_tsul) {
-		for (i = 0; i < idx; i += 3) {
-			namediff = longest_name - tsularr[i+1]
-			for (j = 0; j < namediff; j++)
-				tsularr[i] = tsularr[i]" "
-			printf "%s %s\n", tsularr[i], tsularr[i+2]
-		}
-	}
 	if (picked_tt) {
 		assert(!tdn, "no downloaded files detected")
-		print "Total downloaded: " tdn " GB"
-		print tdn" GB" >cachefile
+		print "Total downloaded:", tdn, "GB"
+		print tdn, "GB" >cachefile
 	}
 }

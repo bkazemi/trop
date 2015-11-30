@@ -162,6 +162,23 @@ function get_non_ascii(str)
 	return str
 }
 
+function kb_conv(kb)
+{
+	# convert to int
+	kb = (int kb) / 1
+	if (kb >= 1e9) {
+		kb = (kb / 1e9)" TB\/s"
+	} else if (kb >= 1e6) {
+		kb = (kb / 1e6)" GB\/s"
+	} else if (kb >= 1e3) {
+		kb = (kb / 1e3)" MB\/s"
+	} else {
+		kb = kb" kB/s"
+	}
+
+	return kb
+}
+
 function tracker_is_valid(trackerarr)
 {
 	for (i in trackerarr)
@@ -317,7 +334,7 @@ function tracker_seed_ulrate()
 function seed_ulrate()
 {
 	assert(!$0, "no input")
-	ll = idx = 0
+	longest_name = idx = total = 0
 	do {
 		if ($0 ~ /^[[:space:]]*Name/) {
 			sub(/^[[:space:]]*Name: */, "")
@@ -332,6 +349,8 @@ function seed_ulrate()
 				getline
 			sub(/^[[:space:]]*Upload Speed: */, "")
 			sularr[idx++] = $0
+		} else if ($1 == "Sum:") {
+			total = $4
 		}
 	} while (getline)
 
@@ -569,6 +588,13 @@ END {
 			for (j = 0; j < namediff; j++)
 				sularr[i] = sularr[i]" "
 			printf "%s %s\n", sularr[i], sularr[i+2]
+		}
+		if (total) {
+			sub(/\..*/, "", total) # remove fractional part
+			total_line = "Total: "
+			for (i = 0; i < longest_name - 7; i++)
+				total_line = total_line" "
+			printf "%s %s\n", total_line, kb_conv(total)
 		}
 	}
 	if (picked_tns) {

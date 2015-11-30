@@ -98,7 +98,14 @@ trop_private ()
 
 trop_seed_list ()
 {
-	transmission-remote $(hpc) -n "$AUTH" -l 2>/dev/null | awk '$9 == "Seeding"' || die $ERR_TSL_FAIL
+	## $1 - bool: get sum line
+
+	transmission-remote $(hpc) -n "$AUTH" -l 2>/dev/null \
+	| awk -v getsum="${1:-0}"                            \
+	'
+		$9 == "Seeding"
+		getsum && $1 == "Sum:"
+	' || die $ERR_TSL_FAIL
 
 	return 0
 }
@@ -121,12 +128,24 @@ trop_num_seed_tracker ()
 
 trop_seed_info ()
 {
-	trop_seed_list | awk '{if ($1 !~ /ID|Sum/) print $1}' \
-	| pipe_check \
-	'while read l; do
-		trop_torrent ${l} i
-		echo ----
-	done' || die $?
+	## $1 - bool: get sum line
+
+	trop_seed_list $1         \
+	| awk -v getsum="${1:-0}" \
+	'
+		$1 !~ /(ID)|(Sum)/ { print $1 }
+		getsum && $1 == "Sum:"
+	' | pipe_check \
+	'
+	 while read tid; do
+		if [ -n "${tid##[!0-9]*}" ]; then
+			trop_torrent ${tid} i
+			echo ----
+		else
+			echo $tid # sum line
+		fi
+	 done
+	' || die $?
 
 	return 0
 }
@@ -143,9 +162,9 @@ trop_seed_info_tracker ()
 
 trop_seed_ulrate ()
 {
-	## $1 - alias
+	## $1 - bool: get sum line
 
-	trop_seed_info | pipe_check "trop_awk 'sul'" || die $?
+	trop_seed_info 1 | pipe_check "trop_awk 'sul'" || die $?
 
 	return 0
 }
@@ -542,7 +561,7 @@ _l ()
 	return 0
 }
 
-# largest number: 27
+# largest number: 28
 
 ERR_TR_FAIL=1
 
@@ -591,6 +610,7 @@ ERR_BAD_FORMAT=24
 ERR_TOO_MANY_OPTS=25
 ERR_TDAUTO_DISABLED=26
 ERR_TROP_DEP=27
+ERR_SUGGEST_FLAGS=28
 
 trop_errors ()
 {
@@ -687,6 +707,14 @@ trop_errors ()
 	$ERR_TROP_DEP)
 		_ 'trop depends on' "$2" "but couldn't find it. Bailing."
 		;;
+	$ERR_SUGGEST_FLAGS)
+		output="bad option\ndid you mean \`-${2%% *}'"
+		[ -z "${2##*[ ]*}" ] && \
+		for flag in ${2#* }; do
+			output="$output or \`-$flag'"
+		done
+		_ "$output ?"
+		;;
 	*)
 		_ 'error'
 		;;
@@ -719,10 +747,10 @@ trop_dep ()
 	case ${1} in
 	diff)
 		# trop depends on GNU diff options
-		diff --version 2>&1 | sed 1q | grep -q 'GNU' || return 1
+		diff --version 2>&1 | sed 1q | grep -q 'GNU'
 	esac
 
-	return 0
+	return $?
 }
 
 check_tracker_errors ()
@@ -730,7 +758,8 @@ check_tracker_errors ()
 	## $1 - silence warning
 
 	trop_private
-	trop_torrent l | awk '
+	trop_torrent l | awk \
+	'
 		BEGIN { ret = 0 }
 		$1 ~ /\*/ {
 			if (!ret)
@@ -745,7 +774,8 @@ check_tracker_errors ()
 show_tracker_errors ()
 {
 	check_tracker_errors 1 || die $ERR_STE_NO_PROBLEMS
-	trop_torrent l | awk '
+	trop_torrent l | awk \
+	'
 		$1 ~ /\*/ {
 			print $1
 		}
@@ -861,11 +891,8 @@ while [ "$1" != '' ]; do
 		;;
 	-sul)
 		trop_private
-		trop_seed_ulrate
+		trop_seed_ulrate 1
 		shift
-		;;
-	-s)
-		_ "options include \`-si' or \`-sul'" ; exit 0
 		;;
 	-ta)
 		trop_tracker_add $2
@@ -980,6 +1007,31 @@ while [ "$1" != '' ]; do
 		;;
 	-q|-notd)
 		shift
+		;;
+	# suggest a flag to the user
+	-no*)
+		die $ERR_SUGGEST_FLAGS "notd"
+		;;
+	-s*)
+		die $ERR_SUGGEST_FLAGS "si sul"
+		;;
+	-t???)
+		die $ERR_SUGGEST_FLAGS "terr"
+		;;
+	-t??)
+		die $ERR_SUGGEST_FLAGS "tdl tns tul"
+		;;
+	-t[a-mA-M])
+		die $ERR_SUGGEST_FLAGS "ta td tl tm"
+		;;
+	-t[n-zN-Z])
+		die $ERR_SUGGEST_FLAGS "ts tt"
+		;;
+	-[a-mA-M])
+		die $ERR_SUGGEST_FLAGS "a h m"
+		;;
+	-[n-zN-Z])
+		die $ERR_SUGGEST_FLAGS "p q V"
 		;;
 	-*)
 		_ 'bad option `'${1}"'" && usage

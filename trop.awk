@@ -611,7 +611,7 @@ END {
 			total_line = "Total: "
 			for (i = 0; i < longest_name - 7; i++)
 				total_line = total_line" "
-			printf "%s %s\n", total_line, kb_conv(total)
+			printf "\n%s %s\n", total_line, kb_conv(total)
 		}
 	}
 	if (picked_tns) {

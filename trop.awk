@@ -607,13 +607,6 @@ END {
 			}
 		}
 		if (total) {
-				sub(/\..*/, "", total) # remove fractional part
-				total_line = "Total: "
-				for (i = 0; i < longest_name - 7; i++)
-					total_line = total_line" "
-				printf "\n%s %s\n", total_line, kb_conv(total)
-		}
-		if (total) {
 			sub(/\..*/, "", total) # remove fractional part
 			total_line = "Total: "
 			for (i = 0; i < longest_name - 7; i++)

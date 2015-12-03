@@ -317,11 +317,12 @@ trop_torrent ()
 	if [ -n "$1" ] && [ -z "$2" ]; then
 		# if there are 3 or more chars then it is a long option
 		# with some exceptions
-		if [ ${#1} -gt 2 ] && [ "$1" != "asd" ]
-		                   && [ "$1" != "asu" ]
-		                   && [ "$1" != "asc" ]
-		                   && [ "$1" != "ASC" ]
-		                   && [ "$1" != "gsr" ]
+		opt=`echo $2 | sed -r s/^-+//g`
+		if [ ${#1} -gt 2 ] && [ "$1" != "asd" ] \
+		                   && [ "$1" != "asu" ] \
+		                   && [ "$1" != "asc" ] \
+		                   && [ "$1" != "ASC" ] \
+		                   && [ "$1" != "gsr" ] \
 		                   && [ "$1" != "GSR" ]; then
 			opt="--${1}"
 		else
@@ -331,7 +332,7 @@ trop_torrent ()
 		return 0
 	fi
 
-	opt=`echo $2 | sed -r /^-+//g`
+	opt=`echo $2 | sed -r s/^-+//g`
 	local thirdopt=0
 	case $2 in
 	d|downlimit) thirdopt=1 ;;
@@ -367,8 +368,8 @@ trop_torrent ()
 	*) die $ERR_TT_UNKNOWN_OPT ;;
 	esac
 
-	if [ ${#2} -gt 2 ] && [ "$2" != "srd" ]
-	                   && [ "$2" != "gsr" ]
+	if [ ${#2} -gt 2 ] && [ "$2" != "srd" ] \
+	                   && [ "$2" != "gsr" ] \
 	                   && [ "$2" != "GSR" ]; then
 		opt="--${2}"
 	else

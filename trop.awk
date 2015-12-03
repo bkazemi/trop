@@ -345,6 +345,7 @@ function seed_ulrate()
 	longest_name = idx = total = 0
 	FS = "  +"
 	do {
+		sub(/^[[:space:]]*/, "")
 		if ($8 == "Seeding") {
 			name = $9
 			if (NF >= 10 && $10 != "") {

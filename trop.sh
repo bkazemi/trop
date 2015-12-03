@@ -316,11 +316,22 @@ trop_torrent ()
 	local opt
 	if [ -n "$1" ] && [ -z "$2" ]; then
 		# if there are 3 or more chars then it is a long option
-		[ ${#1} -gt 2 ] && opt="--${1}" || opt="-${1}"
+		# with some exceptions
+		if [ ${#1} -gt 2 ] && [ "$1" != "asd" ]
+		                   && [ "$1" != "asu" ]
+		                   && [ "$1" != "asc" ]
+		                   && [ "$1" != "ASC" ]
+		                   && [ "$1" != "gsr" ]
+		                   && [ "$1" != "GSR" ]; then
+			opt="--${1}"
+		else
+			opt="-${1}"
+		fi
 		transmission-remote $(hpc) -n "$AUTH" ${opt} || die $ERR_TR_FAIL
 		return 0
 	fi
 
+	opt=`echo $2 | sed -r /^-+//g`
 	local thirdopt=0
 	case $2 in
 	d|downlimit) thirdopt=1 ;;
@@ -356,7 +367,13 @@ trop_torrent ()
 	*) die $ERR_TT_UNKNOWN_OPT ;;
 	esac
 
-	[ ${#2} -gt 2 ] && opt="--${2}" || opt="-${2}"
+	if [ ${#2} -gt 2 ] && [ "$2" != "srd" ]
+	                   && [ "$2" != "gsr" ]
+	                   && [ "$2" != "GSR" ]; then
+		opt="--${2}"
+	else
+		opt="-${2}"
+	fi
 	{ [ $thirdopt -eq 1 ]                                 && \
 	ttshift=1                                             && \
 	transmission-remote $(hpc) -n "$AUTH" -t $1 $opt "$3" || \

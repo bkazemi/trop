@@ -343,22 +343,26 @@ function seed_ulrate()
 {
 	assert(!$0, "no input")
 	longest_name = idx = total = 0
+	FS = "  +"
 	do {
-		if ($0 ~ /^[[:space:]]*Name/) {
-			sub(/^[[:space:]]*Name: */, "")
-			sularr[idx++] = $0
-			namelen = length($0) - (all_ascii($0) ? 0 : length(get_non_ascii($0)))
+		if ($8 == "Seeding") {
+			name = $9
+			if (NF >= 10 && $10 != "") {
+				name = substr($0, match($0, /Seeding/))
+				sub(/^Seeding         /, "", name)
+				sub(/[[:space:]]*$/, "", name)
+			}
+			# name field
+			sularr[idx++] = name
+			assert(!name, "BUG: couldn't get name")
+			namelen = length(name) - (all_ascii(name) ? 0 : length(get_non_ascii(name)))
 			sularr[idx++] = namelen
 			if (namelen > longest_name)
 				longest_name = namelen
-			# at current, the UL line is
-			# ten lines below the Name line
-			for (i = 0; i < 10; i++)
-				getline
-			sub(/^[[:space:]]*Upload Speed: */, "")
-			sularr[idx++] = $0
+			# ul speed field
+			sularr[idx++] = $5
 		} else if ($1 == "Sum:") {
-			total = $4
+			total = $3
 		}
 	} while (getline)
 
@@ -596,7 +600,7 @@ END {
 				namediff = longest_name - sularr[i+1]
 				for (j = 0; j < namediff; j++)
 					sularr[i] = sularr[i]" "
-				printf "%s %s\n", sularr[i], sularr[i+2]
+				printf "%s %s\n", sularr[i], kb_conv(sularr[i+2])
 			}
 		} else {
 			for (i = 0; i < idx; i += 3) {

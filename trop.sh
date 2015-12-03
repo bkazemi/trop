@@ -128,22 +128,16 @@ trop_num_seed_tracker ()
 
 trop_seed_info ()
 {
-	## $1 - bool: get sum line
 
 	trop_seed_list $1         \
-	| awk -v getsum="${1:-0}" \
+	| awk                     \
 	'
 		$1 !~ /(ID)|(Sum)/ { print $1 }
-		getsum && $1 == "Sum:"
 	' | pipe_check \
 	'
 	 while read tid; do
-		if [ -n "${tid##[!0-9]*}" ]; then
-			trop_torrent ${tid} i
-			echo ----
-		else
-			echo $tid # sum line
-		fi
+		trop_torrent ${tid} i
+		echo ----
 	 done
 	' || die $?
 
@@ -162,9 +156,8 @@ trop_seed_info_tracker ()
 
 trop_seed_ulrate ()
 {
-	## $1 - bool: get sum line
 
-	trop_seed_info 1 | pipe_check "trop_awk 'sul'" || die $?
+	trop_seed_list 1 | pipe_check "trop_awk 'sul'" || die $?
 
 	return 0
 }

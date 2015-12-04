@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.6.3
+'trop 1.7.0
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()

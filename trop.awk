@@ -131,9 +131,9 @@ BEGIN {
 	}
 }
 
-function assert(bool, msg)
+function assert(expr_is_false, msg)
 {
-	if (bool)
+	if (!expr_is_false)
 		err("assert(): FAILURE" (msg ? ": "msg : ""))
 
 	return 0
@@ -190,7 +190,7 @@ function tracker_is_valid(trackerarr)
 
 function tracker_match(alias, tracker_file)
 {
-	assert(!alias, "no alias specified")
+	assert(alias, "no alias specified")
 	while ((getline < tracker_file) > 0) {
 		if ($1 == alias && $2 == ":") {
 			all_trackers[0] = $3
@@ -254,7 +254,7 @@ function tracker_match_line()
 
 function tracker_add(alias, primary_tracker, secondary_trackers, tracker_file)
 {
-	assert((!alias || !primary_tracker || !secondary_trackers), "You entered an empty string!")
+	assert((alias && primary_tracker && secondary_trackers), "You entered an empty string!")
 	if (alias ~ /^[+#]/)
 		err("alias cannot start with `"substr(alias, 1, 1)"'")
 	if (secondary_trackers == "_NULL")
@@ -288,7 +288,7 @@ function tracker_add(alias, primary_tracker, secondary_trackers, tracker_file)
 
 function tracker_seed_info()
 {
-	assert(!$0, "no input")
+	assert($0, "no input")
 	do {
 		if (tracker_match_line())
 			printf "%s\n%s\n%s\n%s\n----\n", id, name, hash, $0
@@ -305,7 +305,7 @@ function tracker_seed_info()
 
 function tracker_seed_ulrate()
 {
-	assert(!$0, "no input")
+	assert($0, "no input")
 	longest_name = idx = total = 0
 	do {
 		if (tracker_match_line()) {
@@ -341,7 +341,7 @@ function tracker_seed_ulrate()
 
 function seed_ulrate()
 {
-	assert(!$0, "no input")
+	assert($0, "no input")
 	longest_name = idx = total = 0
 	FS = "  +"
 	do {
@@ -355,7 +355,7 @@ function seed_ulrate()
 			}
 			# name field
 			sularr[idx++] = name
-			assert(!name, "BUG: couldn't get name")
+			assert(name, "BUG: couldn't get name")
 			namelen = length(name) - (all_ascii(name) ? 0 : length(get_non_ascii(name)))
 			sularr[idx++] = namelen
 			if (namelen > longest_name)
@@ -372,7 +372,7 @@ function seed_ulrate()
 
 function tracker_total()
 {
-	assert(!$0, "no input")
+	assert($0, "no input")
 	total = tmpnum = 0
 	do {
 		if ($0 ~ /None/) {
@@ -414,7 +414,7 @@ function tracker_total_hashop()
 
 function tracker_total_details()
 {
-	assert(!$0, "no input")
+	assert($0, "no input")
 	FS = "  +"
 	do {
 		if ($2 ~ /^Magnet:/)
@@ -434,7 +434,7 @@ function tracker_total_details()
 
 function tracker_num_seed()
 {
-	assert(!$0, "no input")
+	assert($0, "no input")
 	tseeding = 0
 	FS = "  +"
 	do {
@@ -451,7 +451,7 @@ function tracker_num_seed()
 
 function tracker_dl_info()
 {
-	assert(!$0, "no input")
+	assert($0, "no input")
 	FS = "  +"
 	do {
 		if ($2 ~ /^Magnet:/) {
@@ -482,7 +482,7 @@ function tracker_dl_info()
 
 function dl_info()
 {
-	assert(!$0, "no input")
+	assert($0, "no input")
 	FS = "  +"
 	do {
 		if ($2 ~ /^State: (Download)|(Up & Down)/) {
@@ -622,7 +622,7 @@ END {
 			print tseeding
 	}
 	if (picked_tt) {
-		assert(!tdn, "no downloaded files detected")
+		assert(tdn, "no downloaded files detected")
 		print "Total downloaded:", tdn, "GB"
 		print tdn, "GB" >cachefile
 	}

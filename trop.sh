@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.6.3
+'trop 1.7.0
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -98,7 +98,14 @@ trop_private ()
 
 trop_seed_list ()
 {
-	transmission-remote $(hpc) -n "$AUTH" -l 2>/dev/null | awk '$9 == "Seeding"' || die $ERR_TSL_FAIL
+	## $1 - bool: get sum line
+
+	transmission-remote $(hpc) -n "$AUTH" -l 2>/dev/null \
+	| awk -v getsum="${1:-0}"                            \
+	'
+		$9 == "Seeding"
+		getsum && $1 == "Sum:"
+	' || die $ERR_TSL_FAIL
 
 	return 0
 }
@@ -121,12 +128,18 @@ trop_num_seed_tracker ()
 
 trop_seed_info ()
 {
-	trop_seed_list | awk '{if ($1 !~ /ID|Sum/) print $1}' \
-	| pipe_check \
-	'while read l; do
-		trop_torrent ${l} i
+
+	trop_seed_list $1         \
+	| awk                     \
+	'
+		$1 !~ /(ID)|(Sum)/ { print $1 }
+	' | pipe_check \
+	'
+	 while read tid; do
+		trop_torrent ${tid} i
 		echo ----
-	done' || die $?
+	 done
+	' || die $?
 
 	return 0
 }
@@ -143,9 +156,8 @@ trop_seed_info_tracker ()
 
 trop_seed_ulrate ()
 {
-	## $1 - alias
 
-	trop_seed_info | pipe_check "trop_awk 'sul'" || die $?
+	trop_seed_list 1 | pipe_check "trop_awk 'sul'" || die $?
 
 	return 0
 }
@@ -304,11 +316,23 @@ trop_torrent ()
 	local opt
 	if [ -n "$1" ] && [ -z "$2" ]; then
 		# if there are 3 or more chars then it is a long option
-		[ ${#1} -gt 2 ] && opt="--${1}" || opt="-${1}"
+		# with some exceptions
+		opt=`echo $2 | sed -r s/^-+//g`
+		if [ ${#1} -gt 2 ] && [ "$1" != "asd" ] \
+		                   && [ "$1" != "asu" ] \
+		                   && [ "$1" != "asc" ] \
+		                   && [ "$1" != "ASC" ] \
+		                   && [ "$1" != "gsr" ] \
+		                   && [ "$1" != "GSR" ]; then
+			opt="--${1}"
+		else
+			opt="-${1}"
+		fi
 		transmission-remote $(hpc) -n "$AUTH" ${opt} || die $ERR_TR_FAIL
 		return 0
 	fi
 
+	opt=`echo $2 | sed -r s/^-+//g`
 	local thirdopt=0
 	case $2 in
 	d|downlimit) thirdopt=1 ;;
@@ -344,7 +368,13 @@ trop_torrent ()
 	*) die $ERR_TT_UNKNOWN_OPT ;;
 	esac
 
-	[ ${#2} -gt 2 ] && opt="--${2}" || opt="-${2}"
+	if [ ${#2} -gt 2 ] && [ "$2" != "srd" ] \
+	                   && [ "$2" != "gsr" ] \
+	                   && [ "$2" != "GSR" ]; then
+		opt="--${2}"
+	else
+		opt="-${2}"
+	fi
 	{ [ $thirdopt -eq 1 ]                                 && \
 	ttshift=1                                             && \
 	transmission-remote $(hpc) -n "$AUTH" -t $1 $opt "$3" || \
@@ -542,7 +572,7 @@ _l ()
 	return 0
 }
 
-# largest number: 27
+# largest number: 28
 
 ERR_TR_FAIL=1
 
@@ -591,6 +621,7 @@ ERR_BAD_FORMAT=24
 ERR_TOO_MANY_OPTS=25
 ERR_TDAUTO_DISABLED=26
 ERR_TROP_DEP=27
+ERR_SUGGEST_FLAGS=28
 
 trop_errors ()
 {
@@ -687,6 +718,14 @@ trop_errors ()
 	$ERR_TROP_DEP)
 		_ 'trop depends on' "$2" "but couldn't find it. Bailing."
 		;;
+	$ERR_SUGGEST_FLAGS)
+		output="bad option\ndid you mean \`-${2%% *}'"
+		[ -z "${2##*[ ]*}" ] && \
+		for flag in ${2#* }; do
+			output="$output or \`-$flag'"
+		done
+		_ "$output ?"
+		;;
 	*)
 		_ 'error'
 		;;
@@ -719,10 +758,10 @@ trop_dep ()
 	case ${1} in
 	diff)
 		# trop depends on GNU diff options
-		diff --version 2>&1 | sed 1q | grep -q 'GNU' || return 1
+		diff --version 2>&1 | sed 1q | grep -q 'GNU'
 	esac
 
-	return 0
+	return $?
 }
 
 check_tracker_errors ()
@@ -730,7 +769,8 @@ check_tracker_errors ()
 	## $1 - silence warning
 
 	trop_private
-	trop_torrent l | awk '
+	trop_torrent l | awk \
+	'
 		BEGIN { ret = 0 }
 		$1 ~ /\*/ {
 			if (!ret)
@@ -745,7 +785,8 @@ check_tracker_errors ()
 show_tracker_errors ()
 {
 	check_tracker_errors 1 || die $ERR_STE_NO_PROBLEMS
-	trop_torrent l | awk '
+	trop_torrent l | awk \
+	'
 		$1 ~ /\*/ {
 			print $1
 		}
@@ -861,11 +902,8 @@ while [ "$1" != '' ]; do
 		;;
 	-sul)
 		trop_private
-		trop_seed_ulrate
+		trop_seed_ulrate 1
 		shift
-		;;
-	-s)
-		_ "options include \`-si' or \`-sul'" ; exit 0
 		;;
 	-ta)
 		trop_tracker_add $2
@@ -980,6 +1018,31 @@ while [ "$1" != '' ]; do
 		;;
 	-q|-notd)
 		shift
+		;;
+	# suggest a flag to the user
+	-no*)
+		die $ERR_SUGGEST_FLAGS "notd"
+		;;
+	-s*)
+		die $ERR_SUGGEST_FLAGS "si sul"
+		;;
+	-t???)
+		die $ERR_SUGGEST_FLAGS "terr"
+		;;
+	-t??)
+		die $ERR_SUGGEST_FLAGS "tdl tns tul"
+		;;
+	-t[a-mA-M])
+		die $ERR_SUGGEST_FLAGS "ta td tl tm"
+		;;
+	-t[n-zN-Z])
+		die $ERR_SUGGEST_FLAGS "ts tt"
+		;;
+	-[a-mA-M])
+		die $ERR_SUGGEST_FLAGS "a h m"
+		;;
+	-[n-zN-Z])
+		die $ERR_SUGGEST_FLAGS "p q V"
 		;;
 	-*)
 		_ 'bad option `'${1}"'" && usage

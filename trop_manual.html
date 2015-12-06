@@ -45,7 +45,7 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
      torrents in a clean fashion.  An example of this need is when the user
      would like to view information about the upload rates of the torrents
      currently seeding.  transmission-remote(1) indeed provides a way to get
-     this with the `-t all -l' sequence, but it is more information than
+     this with the `-t active -l' sequence, but it is more information than
      needed, and the format is unwieldy.  To combat this issue, <span class="bold">trop</span> has the
      <span class="bold">-sul</span> switch to display the name and upload rate of seeding torrents in a
      clean format.  <span class="bold">trop</span> also has the nifty feature to display torrent
@@ -57,9 +57,9 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
      <span class="bold">-h</span> <span class="underline">HOST:PORT</span>
              Set the host and-or port that transmission-remote(1) will attempt
              to connect to.  You may set either the <span class="underline">HOST</span> or <span class="underline">PORT</span> options
-             separately, or both with the colon format.  You may NOT separate
-             them with a space.  The default may be set in the HOSTPORT
-             variable in the <span class="underline">tropriv.sh</span> file.
+             separately, or both with the colon format.  You may _not_
+             separate them with a space.  The default may be set in the
+             HOSTPORT variable in the <span class="underline">tropriv.sh</span> file.
 
      <span class="bold">-a</span> <span class="underline">USER:PASS</span>
              Set the user-name and password that transmission-remote(1) will
@@ -117,8 +117,8 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
              Fuctionally equivalent to <span class="bold">-dl</span> but filter out torrents not
              matching the trackers listed under <span class="underline">tracker-alias</span>
 
-     <span class="bold">-ns</span>     List number of torrents seeding.  This does NOT include torrents
-             that are both `uploading' and `downloading' information.
+     <span class="bold">-ns</span>     List number of torrents seeding.  This does _not_ include
+             torrents that are both `uploading' and `downloading' information.
 
      <span class="bold">-tns</span> <span class="underline">tracker-alias</span>
              Fuctionally equivalent to <span class="bold">-ns</span> but filter out torrents not
@@ -156,16 +156,15 @@ TROP(1)                 FreeBSD General Commands Manual                TROP(1)
      <span class="bold">-t</span> <span class="underline">ID</span> <span class="underline">option</span>
              Pass an option to a torrent.  The option to supply is any valid
              option coupled with the tr-remote `-t' switch, however, the
-             leading dashes are removed.
+             leading dashes are removed. Starting with v1.7 you may add
+             options with the leading dashes if you prefer.
 
      <span class="bold">-td</span> <span class="underline">ID</span> <span class="underline">action</span>
              Add torrent to a queue that will perform <span class="underline">action</span> when it
              completes.  <span class="underline">action</span> is any valid option coupled with the tr-remote
-             `-t' switch, however the leading dashes _must_ be removed.  This
-             is the same format as the <span class="bold">-t</span> switch.  The variables
-             ADD_TRACKER_DONE and ADD_TRACKER_DONE_ACT in <span class="underline">trop.conf</span> are used
-             to control the behavior of this command.  See <span class="underline">README</span> for more
-             information.
+             `-t' switch.  The variables ADD_TRACKER_DONE and
+             ADD_TRACKER_DONE_ACT in <span class="underline">trop.conf</span> are used to control the
+             behavior of this command.  See <span class="underline">README</span> for more information.
 
      <span class="bold">-notd</span>   Stop torrent from being added to the torrent-done queue if
              torrents are automatically being added with the ADD_TORRENT_DONE

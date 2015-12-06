@@ -360,10 +360,7 @@ function seed_ulrate()
 			sularr[idx++] = namelen
 			if (namelen > longest_name)
 				longest_name = namelen
-			# ul speed field
-			sularr[idx++] = $5
-		} else if ($1 == "Sum:") {
-			total = $3
+			total += sularr[idx++] = $5 # ul speed field
 		}
 	} while (getline)
 

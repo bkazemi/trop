@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.7.1
+'trop 1.7.2
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -82,7 +82,9 @@ trop_private ()
 		local trout
 		[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
 		trout=$(transmission-remote $(hpc) -n "$AUTH" -st 2>&1) || \
-		{ [ -n "$trout" ] && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" ; die $ERR_TR_CONNECT ;}
+		{ [ -n "$trout" ] &&                                                  \
+		  echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" \
+		  die $ERR_TR_CONNECT ;}
 		return 0
 	fi
 
@@ -98,13 +100,11 @@ trop_private ()
 
 trop_seed_list ()
 {
-	## $1 - bool: get sum line
-
 	transmission-remote $(hpc) -n "$AUTH" -l 2>/dev/null \
-	| awk -v getsum="${1:-0}"                            \
+	| awk                                                \
 	'
 		$9 == "Seeding"
-		getsum && $1 == "Sum:"
+
 	' || die $ERR_TSL_FAIL
 
 	return 0
@@ -129,10 +129,11 @@ trop_num_seed_tracker ()
 trop_seed_info ()
 {
 
-	trop_seed_list $1         \
-	| awk                     \
+	trop_seed_list \
+	| awk          \
 	'
 		$1 !~ /(ID)|(Sum)/ { print $1 }
+
 	' | pipe_check \
 	'
 	 while read tid; do
@@ -157,7 +158,7 @@ trop_seed_info_tracker ()
 trop_seed_ulrate ()
 {
 
-	trop_seed_list 1 | pipe_check "trop_awk 'sul'" || die $?
+	trop_seed_list | pipe_check "trop_awk 'sul'" || die $?
 
 	return 0
 }
@@ -295,8 +296,11 @@ trop_tracker_total ()
 	if [ $diffu -eq 1 ]; then
 		s="$(echo "$tta" | trop_awk 'ttd' ${1})" || die $?
 	else
-		[ -e "${srcdir}/.cache/"$1"_ttotal" ] && { \
-			printf "Total downloaded: %s\n" "$(cat "${srcdir}/.cache/"$1"_ttotal")" || die $ERR_ALIAS_NOT_FOUND ; exit 0 ;}
+		[ -e "${srcdir}/.cache/"$1"_ttotal" ] &&                                \
+		{                                                                       \
+		printf "Total downloaded: %s\n" "$(cat "${srcdir}/.cache/"$1"_ttotal")" \
+		|| die $ERR_ALIAS_NOT_FOUND ; exit 0                                    \
+		;}
 		s="$(cat ${srcdir}/.cache/"$1"_tap | trop_awk 'ttd' ${1})"
 	fi
 	local d="$(echo "$s" | awk \
@@ -405,9 +409,15 @@ trop_torrent_done ()
 	local nr=0 tid
 	cat ${srcdir}/.cache/tdscript | while read id_and_cmd; do
 		: $((nr += 1))
-		if [ "$(trop_torrent ${id_and_cmd%% *} i | awk '$1 ~ /^Percent/ { print $3 }')" = "100%" ]; then
-			eval trop_torrent $id_and_cmd 2>>${TROP_LOG_PATH} || ldie $ERR_TTD_ACT_FAIL $tid
-			_l "successfully processed command on torrent ${id_and_cmd%% *}, removing ..."
+		if [ "
+		      $(trop_torrent ${id_and_cmd%% *} i \
+		        | awk '$1 ~ /^Percent/ { print $3 }')
+		     " = "100%" ]
+		then
+			eval trop_torrent $id_and_cmd 2>>${TROP_LOG_PATH} \
+			|| ldie $ERR_TTD_ACT_FAIL $tid
+			_l "successfully processed command on torrent ${id_and_cmd%% *}"
+			   "\b, removing from queue"
 			sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
 		fi
 	done
@@ -475,9 +485,14 @@ trop_mtl_common ()
 	check_symlink ()
 	{
 		# XXX assuming tr session was started in $HOME
-		if [ "${HOSTPORT%%:*}" = 'localhost' ] || [ "${HOSTPORT%%:*}" = '127.0.0.1' ] \
-		   || [ -z "${HOSTPORT}" ]; then
-			[ "X$(file -hb ${HOME}/${1} | sed -r 's/^symbolic link to //i' 2>/dev/null)" \
+		if [ "${HOSTPORT%%:*}" = 'localhost' ] || \
+		   [ "${HOSTPORT%%:*}" = '127.0.0.1' ] || \
+		   [ -z "${HOSTPORT}" ]
+		then
+			[ "
+			    X$(file -hb ${HOME}/${1} \
+			    | sed -r 's/^symbolic link to //i' 2>/dev/null)
+			  "
 			  = "X${HOME}/${2}" ] && die $ERR_TMTLC_SYMLINK
 		fi
 	}
@@ -501,8 +516,8 @@ trop_mv_torrent_location()
 	## [$2] - replacement prefix
 
 	trop_mtl_common check_symlink "$1" "$2"
-	trop_torrent all i                    \
-	| trop_awk 'mtl' "$1" "$2"            \
+	trop_torrent all i                         \
+	| trop_awk 'mtl' "$1" "$2"                 \
 	| pipe_check 'trop_mtl_common do_move' 220 \
 	|| die $?
 	echo # newline
@@ -517,8 +532,8 @@ trop_mv_torrent_location_tracker ()
 	## [$3] - replacement prefix
 
 	trop_mtl_common	check_symlink "$2" "$3"
-	trop_torrent all i                    \
-	| trop_awk 'tmtl' "$1" "$2" "$3"      \
+	trop_torrent all i                         \
+	| trop_awk 'tmtl' "$1" "$2" "$3"           \
 	| pipe_check 'trop_mtl_common do_move' 220 \
 	|| die $?
 	echo # newline
@@ -790,9 +805,10 @@ show_tracker_errors ()
 		$1 ~ /\*/ {
 			print $1
 		}
-	' | tr -d \* | while read id; do
-		trop_torrent ${id} i
-	done | trop_awk 'ste'
+	' | tr -d \* \
+	  | while read id; do
+	        trop_torrent ${id} i
+	    done | trop_awk 'ste'
 
 	return 0
 }
@@ -852,7 +868,8 @@ while :; do
 	-h)
 		test -z "$2" && die $ERR_BAD_ARGS "for \`-h'"
 		# regex checks for bad format in host, eg: awd:123g4 -- bad port
-		echo $2 | grep -qE '^-|([[:alnum:]]*:.*[^0-9].*)|(:$)' && die $ERR_BAD_FORMAT "for \`-h'"
+		echo $2 | grep -qE '^-|([[:alnum:]]*:.*[^0-9].*)|(:$)' \
+		&& die $ERR_BAD_FORMAT "for \`-h'"
 		trop_private "sethp" "$2" ; huser=1
 		shift 2
 		;;
@@ -866,8 +883,10 @@ while :; do
 	esac
 done
 
-[ "$CHECK_TRACKER_ERRORS" = 'yes' ] && [ $silent -eq 0 ] \
-&& [ $cte -eq 1 ] && check_tracker_errors
+[ "$CHECK_TRACKER_ERRORS" = 'yes' ] \
+&& [ $silent -eq 0 ]                \
+&& [ $cte -eq 1    ]                \
+&& check_tracker_errors
 
 while [ "$1" != '' ]; do
 	case $1 in
@@ -990,7 +1009,9 @@ while [ "$1" != '' ]; do
 	-p)
 		shift
 		trout=$(transmission-remote $(hpc) -n "$AUTH" "$@" 2>&1) || \
-		{ [ -n "$trout" ] && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" ; die $ERR_TR_FAIL ;}
+		{ [ -n "$trout" ]                                                        \
+		  && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" \
+		  die $ERR_TR_FAIL ;}
 		[ -n "$trout" ] && echo "$trout"
 		echo "$@" | grep -qE '^(-a)|(-add)' && [ "$ADD_TORRENT_DONE" = 'yes' ] && \
 		tid=$(trop_torrent l | awk '$1 !~ /(ID)|(Sum)/{print $1}' | sort -rn | sed 1q)
@@ -1011,9 +1032,11 @@ while [ "$1" != '' ]; do
 		eval ${STARTUP_CMD} || ldie 'STARTUP_CMD failed'
 		trop_private 2>>${TROP_LOG_PATH}
 		[ "$ADD_TORRENT_DONE" = 'yes' ] && \
-		{ transmission-remote $(hpc) -n "$AUTH" --torrent-done-script ${srcdir}/trop_torrent_done.sh 2>>${TROP_LOG_PATH} && \
-		_l 'set tr-remote --torrent-done-script successfully -' "$(date)" \
-		|| _l 'failed to set tr-remote --torrent-done-script' ;}
+		{ transmission-remote $(hpc) -n "$AUTH"                                \
+		      --torrent-done-script ${srcdir}/trop_torrent_done.sh             \
+		   2>>${TROP_LOG_PATH}                                                 \
+		  && _l 'set tr-remote --torrent-done-script successfully -' "$(date)" \
+		  || _l 'failed to set tr-remote --torrent-done-script' ;}
 		exit 0
 		;;
 	-q|-notd)

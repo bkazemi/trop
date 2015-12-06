@@ -36,7 +36,7 @@ The other goal of
 is to provide statistical information about torrents in a clean fashion.
 An example of this need is when the user would like to view information about the upload rates of the torrents currently seeding.
 .Xr transmission-remote 1
-indeed provides a way to get this with the `-t all -l' sequence, but it is more information than needed, and the format is unwieldy.
+indeed provides a way to get this with the `-t active -l' sequence, but it is more information than needed, and the format is unwieldy.
 To combat this issue,
 .Nm
 has the
@@ -62,7 +62,7 @@ You may set either the
 or
 .Ar PORT
 options separately, or both with the colon format.
-You may NOT separate them with a space.
+You may _not_ separate them with a space.
 The default may be set in the HOSTPORT variable in the
 .Pa tropriv.sh
 file.
@@ -124,7 +124,7 @@ but filter out torrents not matching the trackers listed under
 .Ar tracker-alias
 .It Fl ns
 List number of torrents seeding.
-This does NOT include torrents that are both `uploading' and `downloading' information.
+This does _not_ include torrents that are both `uploading' and `downloading' information.
 .It Fl tns Ar tracker-alias
 Fuctionally equivalent to
 .Fl ns
@@ -156,16 +156,13 @@ and get more information about a specific torrent from this output.
 Show the total amount downloaded from a tracker set as seen by the trackers (free-leech downloads are not included).
 .It Fl t Ar ID Ar option
 Pass an option to a torrent.
-The option to supply is any valid option coupled with the tr-remote `-t' switch, however, the leading dashes are removed.
+The option to supply is any valid option coupled with the tr-remote `-t' switch, however, the leading dashes are removed. Starting with v1.7 you may add options with the leading dashes if you prefer.
 .It Fl td Ar ID Ar action
 Add torrent to a queue that will perform
 .Ar action
 when it completes.
 .Ar action
-is any valid option coupled with the tr-remote `-t' switch, however the leading dashes _must_ be removed.
-This is the same format as the
-.Fl t
-switch.
+is any valid option coupled with the tr-remote `-t' switch.
 The variables ADD_TRACKER_DONE and ADD_TRACKER_DONE_ACT in
 .Pa trop.conf
 are used to control the behavior of this command.

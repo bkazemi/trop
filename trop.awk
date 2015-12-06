@@ -165,7 +165,7 @@ function get_non_ascii(str)
 function kb_conv(kb)
 {
 	# convert to int
-	kb = (int kb) / 1
+	kb = int(kb) / 1
 	if (kb >= 1e9) {
 		kb = (kb / 1e9)" TB\/s"
 	} else if (kb >= 1e6) {
@@ -360,10 +360,7 @@ function seed_ulrate()
 			sularr[idx++] = namelen
 			if (namelen > longest_name)
 				longest_name = namelen
-			# ul speed field
-			sularr[idx++] = $5
-		} else if ($1 == "Sum:") {
-			total = $3
+			total += sularr[idx++] = $5 # ul speed field
 		}
 	} while (getline)
 

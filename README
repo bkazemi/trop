@@ -53,10 +53,10 @@ example : primary-tracker.example.org
 	+ third-tracker.example.com
 
 The first word is the alias; The second word is the primary tracker. Both these entries
-are required. The alias and all tracker entries must NOT contain any spaces. There must
+are required. The alias and all tracker entries must _not_ contain any spaces. There must
 be a space on both sides of the alias-primary tracker separator (the colon). The alias may
 _not_ start with `+' or `#'. Secondary tracker entries must contain a `+' symbol as the
-first non-whitespace character, followed by a space, then the tracker entry. There may not
+first non-whitespace character, followed by a space, then the tracker entry. There may _not_
 be more than one unique tracker URL entry in any alias. Any number of secondary trackers
 may be specified. You may interactively add trackers through the `-ta' flag in trop.
 

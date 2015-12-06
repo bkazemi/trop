@@ -165,7 +165,7 @@ function get_non_ascii(str)
 function kb_conv(kb)
 {
 	# convert to int
-	kb = (int kb) / 1
+	kb = int(kb) / 1
 	if (kb >= 1e9) {
 		kb = (kb / 1e9)" TB\/s"
 	} else if (kb >= 1e6) {

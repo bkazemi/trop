@@ -415,7 +415,7 @@ trop_torrent_done ()
 		then
 			eval trop_torrent $id_and_cmd 2>>${TROP_LOG_PATH} \
 			|| ldie $ERR_TTD_ACT_FAIL $tid
-			_l "successfully processed command on torrent ${id_and_cmd%% *}"
+			_l "successfully processed command on torrent ${id_and_cmd%% *}"\
 			   "\b, removing from queue"
 			sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
 		fi

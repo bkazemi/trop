@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.7.2
+'trop 1.7.3
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -409,14 +409,13 @@ trop_torrent_done ()
 	local nr=0 tid
 	cat ${srcdir}/.cache/tdscript | while read id_and_cmd; do
 		: $((nr += 1))
-		if [ "
-		      $(trop_torrent ${id_and_cmd%% *} i \
-		        | awk '$1 ~ /^Percent/ { print $3 }')
-		     " = "100%" ]
+		if [ "$(trop_torrent ${id_and_cmd%% *} i \
+		        | awk '$1 ~ /^Percent/ { print $3 }')" \
+		     = "100%" ]
 		then
 			eval trop_torrent $id_and_cmd 2>>${TROP_LOG_PATH} \
 			|| ldie $ERR_TTD_ACT_FAIL $tid
-			_l "successfully processed command on torrent ${id_and_cmd%% *}"
+			_l "successfully processed command on torrent ${id_and_cmd%% *}"\
 			   "\b, removing from queue"
 			sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
 		fi
@@ -489,10 +488,8 @@ trop_mtl_common ()
 		   [ "${HOSTPORT%%:*}" = '127.0.0.1' ] || \
 		   [ -z "${HOSTPORT}" ]
 		then
-			[ "
-			    X$(file -hb ${HOME}/${1} \
-			    | sed -r 's/^symbolic link to //i' 2>/dev/null)
-			  "
+			[ "X$(file -hb ${HOME}/${1} \
+			    | sed -r 's/^symbolic link to //i' 2>/dev/null)" \
 			  = "X${HOME}/${2}" ] && die $ERR_TMTLC_SYMLINK
 		fi
 	}

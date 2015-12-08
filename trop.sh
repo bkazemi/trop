@@ -1047,7 +1047,7 @@ while [ "$1" != '' ]; do
 		die $ERR_SUGGEST_FLAGS "si sul"
 		;;
 	-t???)
-		die $ERR_SUGGEST_FLAGS "terr"
+		die $ERR_SUGGEST_FLAGS "terr tdel"
 		;;
 	-t??)
 		die $ERR_SUGGEST_FLAGS "tdl tns tul"

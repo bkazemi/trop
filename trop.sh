@@ -68,7 +68,7 @@ echo_wrap ()
 printf_wrap ()
 {
 	# in case printf is used to display anything to user
-	[ $silent -eq 0 ] && printf "$@" >&2
+	[ $silent -eq 0 ] && printf -- "$@" >&2
 
 	return 0
 }

@@ -1019,12 +1019,13 @@ while [ "$1" != '' ]; do
 		shift $((2 + move))
 	;;
 	-startup)
-		who | awk -v me=$(id -un) \
+		[ "$STARTUP_LOGIN" = 'yes' ] && \
+		{ who | awk -v me=$(id -un) \
 		'
 			BEGIN { mecnt = -1 }
 			$1 == me { mecnt++ }
 			END { exit mecnt }
-		' || break
+		' || break ;}
 		_l 'attempting startup...'
 		eval ${STARTUP_CMD} || ldie 'STARTUP_CMD failed'
 		trop_private 2>>${TROP_LOG_PATH}

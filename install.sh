@@ -34,7 +34,7 @@ if [ -n "$1" ]; then
 		fi
 	done
 	# don't edit!
-	CUR_TROPCONF_SHA256='688f61a3743a2d181dc1ead01230a11863f942d12695fb4d9c9e7ad1bd709843'
+	CUR_TROPCONF_SHA256='e71bae449b2a2d28a95d9b4ce6d6868c14f75275bfd629f94ec2bc3f1de3fb54'
 	CUR_TROPRIV_SHA256='04e95cfc0391674f0591a5e7f7a2ca995a5d16afffc811ac09747d511cd00549'
 	hash sha256 2>/dev/null || err 'need sha256 to check trop.conf and tropriv.sh'
 	tropconf_sha256=`sha256 -q trop.conf`

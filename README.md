@@ -10,7 +10,7 @@ in a clean way, and make doing common tasks more automatic,
 interchangeably through command-line or scripts. The code
 is written to be as POSIX compliant as possible.
 
-## Installing:
+## Installing
 
 The recommended way to install trop is to use the \`install.sh'
 script. The install script will install the trop files to the
@@ -22,7 +22,7 @@ fashion, the only requirement is that all files distributed in
 the release are kept in the same directory. Any other configuration
 is not guaranteed to work.
 
-## Updating:
+## Updating
 
 Starting with trop 1.4.0, you can update the core files through install.sh by supplying
 \`up' or \`update' as an argument.

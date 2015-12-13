@@ -83,7 +83,7 @@ trop_private ()
 		[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
 		trout=$(transmission-remote $(hpc) -n "$AUTH" -st 2>&1) || \
 		{ [ -n "$trout" ] &&                                                  \
-		  echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" \
+		  printf_wrap "transmission-remote: %s\n" "${trout##*transmission-remote: }"
 		  die $ERR_TR_CONNECT ;}
 		return 0
 	fi

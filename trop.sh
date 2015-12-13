@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.7.3
+'trop 1.7.4
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -68,7 +68,7 @@ echo_wrap ()
 printf_wrap ()
 {
 	# in case printf is used to display anything to user
-	[ $silent -eq 0 ] && printf "$@" >&2
+	[ $silent -eq 0 ] && printf -- "$@" >&2
 
 	return 0
 }
@@ -83,7 +83,7 @@ trop_private ()
 		[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
 		trout=$(transmission-remote $(hpc) -n "$AUTH" -st 2>&1) || \
 		{ [ -n "$trout" ] &&                                                  \
-		  echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" \
+		  printf_wrap "transmission-remote: %s\n" "${trout##*transmission-remote: }"
 		  die $ERR_TR_CONNECT ;}
 		return 0
 	fi
@@ -312,7 +312,7 @@ trop_tracker_total ()
 
 trop_torrent ()
 {
-	## $1   - torrent ID or single opt
+	##  $1  - torrent ID or single opt
 	## [$2] - option paired with torrent ID
 	## [$3] - sub-option
 
@@ -429,20 +429,20 @@ trop_tracker_add()
 	## $1 - alias to add
 
 	[ -n "$1" ] && a=$1 || \
-	{ printf 'enter alias to use > ' ; read a ;}
-	printf 'enter primary tracker > '         ; read pt
-	printf 'add secondary tracker(s)? y/n > ' ; read ast
+	{ printf_wrap 'enter alias to use > ' ; read a ;}
+	printf_wrap 'enter primary tracker > '         ; read pt
+	printf_wrap 'add secondary tracker(s)? y/n > ' ; read ast
 	[ ${#ast} -gt 1 ] && ast=$(echo $ast | tr '[:upper:]' '[:lower:]')
 	while :; do
 		case $ast in
 		[Yy]|yes)
-			printf 'how many trackers would you like to add? > ' ; read numt
+			printf_wrap 'how many trackers would you like to add? > ' ; read numt
 			local numtlen=${#numt}
 			numt=$(echo $numt | tr -Cd '[:digit:]')
 			# if numt != numtlen, then numt
 			# was stripped and thus invalid
 			while [ ! $numt ] || [ $numt -le 0 ] || [ ${#numt} -ne $numtlen ]; do
-				printf "enter a valid number > "
+				printf_wrap "enter a valid number > "
 				read numt
 				numtlen=${#numt}
 				numt=$(echo $numt | tr -Cd '[:digit:]')
@@ -451,7 +451,7 @@ trop_tracker_add()
 			;;
 		[Nn]|no) break ;;
 		*)
-			printf 'please answer yes or no > ' ; read ast
+			printf_wrap 'please answer yes or no > ' ; read ast
 			[ ${#ast} -gt 1 ] && ast=$(echo $ast | tr '[:upper:]' '[:lower:]')
 			;;
 		esac
@@ -459,7 +459,7 @@ trop_tracker_add()
 	[ ! $numt ] && numt=0 st='_NULL'
 	local i=1
 	while [ $i -le $numt ]; do
-		printf "enter tracker #%d > " "$i"
+		printf_wrap "enter tracker #%d > " "$i"
 		read tmp
 		[ "$st" ] && st="$st ""$tmp" ||\
 		st="$tmp"
@@ -642,7 +642,7 @@ trop_errors ()
 	##        to concat with the error msg
 
 	case ${1} in
-	$ERR_TR_FAIL)
+	$ERR_TR_FAIL )
 		_ "transmission-remote error"
 		;;
 	$ERR_NO_MSG ) ;; # no message
@@ -727,10 +727,10 @@ trop_errors ()
 		_ 'tr-remote set to run --torrent-done-script,' \
 		  'but your configuration has the option disabled. Bailing.'
 		;;
-	$ERR_TROP_DEP)
+	$ERR_TROP_DEP )
 		_ 'trop depends on' "$2" "but couldn't find it. Bailing."
 		;;
-	$ERR_SUGGEST_FLAGS)
+	$ERR_SUGGEST_FLAGS )
 		output="bad option\ndid you mean \`-${2%% *}'"
 		[ -z "${2##*[ ]*}" ] && \
 		for flag in ${2#* }; do
@@ -1019,12 +1019,13 @@ while [ "$1" != '' ]; do
 		shift $((2 + move))
 	;;
 	-startup)
-		who | awk -v me=$(id -un) \
+		[ "$STARTUP_LOGIN" = 'yes' ] && \
+		{ who | awk -v me=$(id -un) \
 		'
 			BEGIN { mecnt = -1 }
 			$1 == me { mecnt++ }
 			END { exit mecnt }
-		' || break
+		' || break ;}
 		_l 'attempting startup...'
 		eval ${STARTUP_CMD} || ldie 'STARTUP_CMD failed'
 		trop_private 2>>${TROP_LOG_PATH}
@@ -1047,7 +1048,7 @@ while [ "$1" != '' ]; do
 		die $ERR_SUGGEST_FLAGS "si sul"
 		;;
 	-t???)
-		die $ERR_SUGGEST_FLAGS "terr"
+		die $ERR_SUGGEST_FLAGS "terr tdel"
 		;;
 	-t??)
 		die $ERR_SUGGEST_FLAGS "tdl tns tul"

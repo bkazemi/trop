@@ -284,9 +284,11 @@ trop_tracker_total ()
 					print $2
 			}') || die $ERR_TTT_CACHE
 			# if tth returns one, then torrent's idx was shifted
-			echo | trop_awk 'tth' 'check' $h ${1} || { : $((i += 1)) ; continue ;}
-			# else it is a new torrent
-			tta=`printf "%s\n%s" "$tta" "$(trop_torrent ${tid} i)"`
+			if echo | trop_awk 'tth' 'check' $h ${1}; then
+				# ;
+			else # it is a new torrent
+				tta=`printf "%s\n%s" "$tta" "$(trop_torrent ${tid} i)"`
+			fi
 			: $((i += 1))
 		done
 		diffu=1

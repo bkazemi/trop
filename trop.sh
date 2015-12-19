@@ -586,6 +586,15 @@ _l ()
 	return 0
 }
 
+_w ()
+{
+	## $@ - strings to echo
+
+	_ "WARNING:" "$@"
+
+	return 0
+}
+
 # largest number: 28
 
 ERR_TR_FAIL=1
@@ -949,8 +958,14 @@ while [ "$1" != '' ]; do
 				sed -i '' "${nr},${ot}d" "${TROP_TRACKER}"
 				break
 			fi
-		done \
-		&& _ "successfully removed \`${2}'"
+		done                                                            \
+		&& esc_srcdir=$(echo $srcdir | sed -r 's/([./?*(){}|])/\\\1/g') \
+		&& cache_files=$(ls -1d $srcdir/.cache/${2}_* 2>/dev/null \
+		     | sed -r "s/$esc_srcdir\/\.cache\/(conf|priv)_chksum//g")  \
+		&& [ -n "${cache_files}" ]                                      \
+		&& { rm $cache_files \
+		     || _w "couldn't remove cache files for \`${2}'" ;}
+		_ "successfully removed \`${2}'"
 		exit 0
 		;;
 	-tl)

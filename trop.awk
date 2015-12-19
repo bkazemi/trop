@@ -347,13 +347,12 @@ function seed_ulrate()
 	do {
 		sub(/^[[:space:]]*/, "")
 		if ($8 == "Seeding") {
-			name = $9
+			name = $9 # name field
 			if (NF >= 10 && $10 != "") {
 				name = substr($0, match($0, /Seeding/))
 				sub(/^Seeding         /, "", name)
 				sub(/[[:space:]]*$/, "", name)
 			}
-			# name field
 			sularr[idx++] = name
 			assert(name, "BUG: couldn't get name")
 			namelen = length(name) - (all_ascii(name) ? 0 : length(get_non_ascii(name)))
@@ -454,10 +453,10 @@ function tracker_dl_info()
 		if ($2 ~ /^Magnet:/) {
 			if (tracker_match_line()) {
 				while (getline) {
-					if ($2 ~ /^State: (Download)|(Up & Down)/) {
+					if ($2 ~ /^State: (Download|Up & Down)/) {
 						printf "%s\n%s\n%s\n", name, id, $0
 						while (getline) {
-							if ($2 ~ /^(Percent Done)|(ETA)|(Download Speed)|(Upload Speed)|(Peers):/)
+							if ($2 ~ /^(Percent Done|ETA|Download Speed|Upload Speed|Peers):/)
 								# leave leading spaces to make info clearer
 								print $0
 							else if ($1 ~ /^HISTORY/) {
@@ -482,10 +481,10 @@ function dl_info()
 	assert($0, "no input")
 	FS = "  +"
 	do {
-		if ($2 ~ /^State: (Download)|(Up & Down)/) {
+		if ($2 ~ /^State: (Download|Up & Down)/) {
 			printf "%s\n%s\n%s\n", name, id, $0
 			while (getline) {
-				if ($2 ~ /^(Percent Done)|(ETA)|(Download Speed)|(Upload Speed)|(Peers):/)
+				if ($2 ~ /^(Percent Done|ETA|Download Speed|Upload Speed|Peers):/)
 					# leave leading spaces to make info clearer
 					print $0
 				else if ($1 ~ /^HISTORY/) {
@@ -551,7 +550,7 @@ function show_tracker_errors()
 			printf "%s\n%s\n", $2, id
 		} else if ($2 ~ /^Id:/) {
 			id = $0
-		} else if ($2 ~ /^(Location)|(Error)|(Tracker gave an error):/) {
+		} else if ($2 ~ /^(Location|Error|Tracker gave an error):/) {
 			print $0
 		}
 	} while (getline)

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.7.5
+'trop 1.7.6
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -463,7 +463,7 @@ trop_tracker_add()
 	while [ $i -le $numt ]; do
 		printf_wrap "enter tracker #%d > " "$i"
 		read tmp
-		[ "$st" ] && st="$st ""$tmp" ||\
+		[ "$st" ] && st="$st ""$tmp" || \
 		st="$tmp"
 		: $((i += 1))
 	done
@@ -1023,13 +1023,13 @@ while [ "$1" != '' ]; do
 	-p)
 		shift
 		trout=$(transmission-remote $(hpc) -n "$AUTH" "$@" 2>&1) || \
-		{ [ -n "$trout" ]                                                        \
-		  && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }" \
+		{ [ -n "$trout" ] \
+		  && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }"
 		  die $ERR_TR_FAIL ;}
 		[ -n "$trout" ] && echo "$trout"
-		echo "$@" | grep -qE '^(-a)|(-add)' && [ "$ADD_TORRENT_DONE" = 'yes' ] && \
+		echo "$@" | grep -qE '^-(a|add)' && [ "$ADD_TORRENT_DONE" = 'yes' ] && \
 		tid=$(trop_torrent l | awk '$1 !~ /(ID)|(Sum)/{print $1}' | sort -rn | sed 1q)
-		[ -n "$tid" ] && trop_torrent_done ${tid} ${ADD_TORRENT_DONE_ACT:-rm}
+		[ -n "$tid" ] && trop_torrent_done ${tid} ${ADD_TORRENT_DONE_ACT:-r}
 		exit 0
 		;;
 	esac

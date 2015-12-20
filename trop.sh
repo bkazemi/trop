@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.7.4
+'trop 1.7.5
 last checked against: transmission-remote 2.84 (14307)'
 
 usage ()
@@ -284,9 +284,11 @@ trop_tracker_total ()
 					print $2
 			}') || die $ERR_TTT_CACHE
 			# if tth returns one, then torrent's idx was shifted
-			echo | trop_awk 'tth' 'check' $h ${1} || { : $((i += 1)) ; continue ;}
-			# else it is a new torrent
-			tta=`printf "%s\n%s" "$tta" "$(trop_torrent ${tid} i)"`
+			if echo | trop_awk 'tth' 'check' $h ${1}; then
+				# ;
+			else # it is a new torrent
+				tta=`printf "%s\n%s" "$tta" "$(trop_torrent ${tid} i)"`
+			fi
 			: $((i += 1))
 		done
 		diffu=1
@@ -580,6 +582,15 @@ _l ()
 
 	[ "$TROP_LOG" = 'yes' ] && \
 	_ "$@" 2>>${TROP_LOG_PATH}
+
+	return 0
+}
+
+_w ()
+{
+	## $@ - strings to echo
+
+	_ "WARNING:" "$@"
 
 	return 0
 }
@@ -947,8 +958,14 @@ while [ "$1" != '' ]; do
 				sed -i '' "${nr},${ot}d" "${TROP_TRACKER}"
 				break
 			fi
-		done \
-		&& _ "successfully removed \`${2}'"
+		done                                                            \
+		&& esc_srcdir=$(echo $srcdir | sed -r 's/([./?*(){}|])/\\\1/g') \
+		&& cache_files=$(ls -1d $srcdir/.cache/${2}_* 2>/dev/null \
+		     | sed -r "s/$esc_srcdir\/\.cache\/(conf|priv)_chksum//g")  \
+		&& [ -n "${cache_files}" ]                                      \
+		&& { rm -- $cache_files \
+		     || _w "couldn't remove cache files for \`${2}'" ;}
+		_ "successfully removed \`${2}'"
 		exit 0
 		;;
 	-tl)

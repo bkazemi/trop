@@ -963,7 +963,7 @@ while [ "$1" != '' ]; do
 		&& cache_files=$(ls -1d $srcdir/.cache/${2}_* 2>/dev/null \
 		     | sed -r "s/$esc_srcdir\/\.cache\/(conf|priv)_chksum//g")  \
 		&& [ -n "${cache_files}" ]                                      \
-		&& { rm $cache_files \
+		&& { rm -- $cache_files \
 		     || _w "couldn't remove cache files for \`${2}'" ;}
 		_ "successfully removed \`${2}'"
 		exit 0

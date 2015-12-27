@@ -505,9 +505,9 @@ trop_mtl_common ()
 			echo "$repfx" | grep -qE '^\./' && \
 			repfx="${PWD}/${repfx#./}"
 			# prepend $HOME if paths are relative
-			echo "$prefx" | grep -qE '^\.?[^/]' && \
+			echo "$prefx" | grep -qE '^[^/]' && \
 			prefx="${HOME}/$prefx"
-			echo "$repfx" | grep -qE '^\.?[^/]' && \
+			echo "$repfx" | grep -qE '^[^/]' && \
 			repfx="${HOME}/$repfx"
 			# strip extraneous fwd slashes to prepare for
 			# string comparison

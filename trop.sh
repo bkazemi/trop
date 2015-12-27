@@ -725,6 +725,7 @@ trop_errors ()
 		_ "trop_tracker_total(): failed getting torrent IDs"
 		;;
 	$ERR_STE_NO_PROBLEMS )
+		tret=0
 		_ 'show_tracker_errors(): no tracker errors detected.'
 		;;
 	$ERR_CTE_PROBLEM )
@@ -869,6 +870,8 @@ show_tracker_errors ()
 }
 
 # --------------- main --------------- #
+
+# global variables
 unset _
 PROG_NAME=${0##*/}
 [ $# -eq 0 ] && usage
@@ -876,23 +879,21 @@ LC_ALL=POSIX
 POSIXLY_CORRECT=1
 toppid=$$
 silent=0
-trap 'exit 1' 6
+tret=1 # trap exit return value
+
+trap 'exit ${tret}' 6
 hash transmission-remote 2>/dev/null || die $ERR_TR_PATH
 
 # check if file used to call the script is a link or the script file itself
 # hard links will fail, so stick to sym links
-file -hb $0 | grep -q '^POSIX shell' && \
-	{	                                            \
-		{ eval "echo ${0} | grep -qEx '^\./{1}'" && \
-		  srcdir="." ;}                             \
-		||                                          \
-		{ eval "echo ${0} | grep -qEx '[^/]+'" &&   \
-		  srcdir="." ;}                             \
-		||                                          \
-		srcdir=${0%/*}                              \
-	;}	                                            \
-|| \
-srcdir="$(echo $(file -hb $0) | sed -r -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
+if file -hb $0 | grep -q '^POSIX shell'
+then
+	echo $0 | grep -qE '/' \
+	&& srcdir=${0%/*} || srcdir="."
+else
+	srcdir="$(echo $(file -hb $0) \
+                 | sed -r -e "s/^symbolic link to //i;s/\/+[^\/]+$//")"
+fi
 
 TROP_TRACKER=${srcdir}/trackers
 auser=0 huser=0 PRIVATE=0 cte=1

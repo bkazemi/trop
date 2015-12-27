@@ -888,7 +888,7 @@ hash transmission-remote 2>/dev/null || die $ERR_TR_PATH
 # hard links will fail, so stick to sym links
 if file -hb $0 | grep -q '^POSIX shell'
 then
-	echo $0 | grep -qE '/' \
+	[ "${0##*/}" != "$0" ] \
 	&& srcdir=${0%/*} || srcdir="."
 else
 	srcdir="$(echo $(file -hb $0) \

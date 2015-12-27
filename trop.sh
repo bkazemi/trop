@@ -4,6 +4,9 @@ TROP_VERSION=\
 'trop 1.7.6
 last checked against: transmission-remote 2.84 (14307)'
 
+# TODO
+#  - check if file has POSIX specs
+
 usage ()
 {
 	cat <<EOF >&2
@@ -409,15 +412,15 @@ trop_torrent_done ()
 		return 0
 	fi
 	local nr=0 tid
-	cat ${srcdir}/.cache/tdscript | while read id_and_cmd; do
+	cat ${srcdir}/.cache/tdscript | while read tid_and_cmd; do
 		: $((nr += 1))
-		if [ "$(trop_torrent ${id_and_cmd%% *} i \
+		if [ "$(trop_torrent ${tid_and_cmd%% *} i \
 		        | awk '$1 ~ /^Percent/ { print $3 }')" \
 		     = "100%" ]
 		then
-			eval trop_torrent $id_and_cmd 2>>${TROP_LOG_PATH} \
+			eval trop_torrent $tid_and_cmd 2>>${TROP_LOG_PATH} \
 			|| ldie $ERR_TTD_ACT_FAIL $tid
-			_l "successfully processed command on torrent ${id_and_cmd%% *}"\
+			_l "successfully processed command on torrent ${tid_and_cmd%% *}"\
 			   "\b, removing from queue"
 			sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
 		fi
@@ -486,22 +489,59 @@ trop_mtl_common ()
 	check_symlink ()
 	{
 		# XXX assuming tr session was started in $HOME
-		if [ "${HOSTPORT%%:*}" = 'localhost' ] || \
-		   [ "${HOSTPORT%%:*}" = '127.0.0.1' ] || \
+		# XXX does tr create directories that don't
+		#     exist for --move?
+		if [ "${HOSTPORT%:*}" = 'localhost' ] || \
+		   [ "${HOSTPORT%:*}" = '127.0.0.1' ] || \
 		   [ -z "${HOSTPORT}" ]
 		then
-			[ "X$(file -hb ${HOME}/${1} \
-			    | sed -r 's/^symbolic link to //i' 2>/dev/null)" \
-			  = "X${HOME}/${2}" ] && die $ERR_TMTLC_SYMLINK
+			# trailing fwd slashes need to stripped
+			# so file doesn't follows symlinks
+			prefx="$(echo "$1" | sed -r 's/\/+$//')"
+			repfx="$(echo "$2" | sed -r 's/\/+$//')"
+			# `./' is relative to $PWD, replace it
+			echo "$prefx" | grep -qE '^\./' && \
+			prefx="${PWD}/${prefx#./}"
+			echo "$repfx" | grep -qE '^\./' && \
+			repfx="${PWD}/${repfx#./}"
+			# prepend $HOME if paths are relative
+			echo "$prefx" | grep -qE '^\.?[^/]' && \
+			prefx="${HOME}/$prefx"
+			echo "$repfx" | grep -qE '^\.?[^/]' && \
+			repfx="${HOME}/$repfx"
+			# strip extraneous fwd slashes to prepare for
+			# string comparison
+			prefx="$(echo "$prefx" | sed -r 's/\/+/\//g')"
+			repfx="$(echo "$repfx" | sed -r 's/\/+/\//g')"
+			if [ "$prefx" = "$repfx" ]; then
+				die $ERR_TMTLC_SAMEDIR
+			else
+				file -hb "$prefx" "$repfx"            \
+				| awk -v p="${prefx}" -v r="${repfx}" \
+				'
+					BEGIN { i = 0 }
+					{ if (/^symbolic link to /) {
+					  	absdir[i] = substr($0, 18) # start at len(m)+1
+					  	if (absdir[i++] !~ /^\//) # relative path
+					  		absdir[i-1] = "/"absdir[i-1]
+					  } else nonsym = (NR == 1 ? p : r)
+					}
+					END {
+						if (!i) exit 0 # no symlinks
+						exit (i == 2 ? absdir[0] == absdir[1] : absdir[0] == nonsym)
+					}
+				' || die $ERR_TMTLC_SYMLINK
+			fi
 		fi
 	}
 	do_move ()
 	{
 		local tid newloc numt=0
 		while read tmp; do
-			tid=${tmp%% *} newloc=$(echo $tmp | sed -r 's/^[^ ]+ //')
-			eval ${tmptr} -t ${tid} --move "${newloc}" >/dev/null \
-			&& printf_wrap "successfully moved $((numt += 1)) torrents\r"
+			tid=${tmp%% *} newloc=$(echo $tmp | sed -r 's/^[^ ]+ //')     \
+			&& eval ${tmptr} -t ${tid} --move "${newloc}" >/dev/null      \
+			&& printf_wrap "successfully moved $((numt += 1)) torrents\r" \
+			|| break
 		done \
 		|| die $ERR_TMTL_MV_FAIL ${tid}
 	}
@@ -595,7 +635,10 @@ _w ()
 	return 0
 }
 
-# largest number: 28
+# reminder: only use functions to return codes
+#           _never_ use exit!
+#
+# largest number: 29
 
 ERR_TR_FAIL=1
 
@@ -629,6 +672,7 @@ ERR_TTD_SCHG=11
 # trop_mtl_common
 ERR_TMTLC_MV_FAIL=13
 ERR_TMTLC_SYMLINK=14
+ERR_TMTLC_SAMEDIR=29
 
 # general
 ERR_NO_MSG=15
@@ -695,10 +739,13 @@ trop_errors ()
 	$ERR_TMTLC_MV_FAIL )
 		_ 'trop_mtl_common(): failed to move torrent `' "$2" "'"
 		;;
+	$ERR_TMTLC_SAMEDIR )
+		_ 'trop_mtl_common(): you entered the same directory!'
+		;;
 	$ERR_TMTLC_SYMLINK )
-		  "trop_mtl_common():\n"
-		_ "Transmission currently won't change the location if the current one is a symbolic link\n"\
-		  "to the replacement base or if the relative path is the same. Bailing."
+		_  "trop_mtl_common():\n"\
+		   "Transmission currently won't change the location if the current one is a symbolic link\n"\
+		   "to the replacement base or if the relative path is the same. Bailing."
 		;;
 ## FUNC ERR END $$
 	$ERR_TR_CONNECT )
@@ -814,8 +861,8 @@ show_tracker_errors ()
 			print $1
 		}
 	' | tr -d \* \
-	  | while read id; do
-	        trop_torrent ${id} i
+	  | while read tid; do
+	        trop_torrent ${tid} i
 	    done | trop_awk 'ste'
 
 	return 0

@@ -668,10 +668,10 @@ ERR_TT_UNKNOWN_OPT=12
 ERR_TTT_CACHE=6
 ERR_TTT_TID_FAIL=7
 
-# show_tracker_errors
+# show_torrent_errors
 ERR_STE_NO_PROBLEMS=8
 
-# check_tracker_errors
+# check_torrent_errors
 ERR_CTE_PROBLEM=9
 
 # trop_tracker_done
@@ -738,10 +738,10 @@ trop_errors ()
 		;;
 	$ERR_STE_NO_PROBLEMS )
 		tret=0
-		_ 'show_tracker_errors(): no tracker errors detected.'
+		_ 'show_torrent_errors(): no torrent errors detected.'
 		;;
 	$ERR_CTE_PROBLEM )
-		_ "check_tracker_errors(): WARNING: trop detected a tracker error."\
+		_ "check_torrent_errors(): WARNING: trop detected a torrent error."\
 		  "Use the \`-terr' switch to show more info."
 		;;
 	$ERR_TTD_ACT_FAIL )
@@ -850,7 +850,7 @@ trop_dep ()
 	return $?
 }
 
-check_tracker_errors ()
+check_torrent_errors ()
 {
 	## $1 - silence warning
 
@@ -868,9 +868,9 @@ check_tracker_errors ()
 	return 0
 }
 
-show_tracker_errors ()
+show_torrent_errors ()
 {
-	check_tracker_errors 1 || die $ERR_STE_NO_PROBLEMS
+	check_torrent_errors 1 || die $ERR_STE_NO_PROBLEMS
 	trop_torrent l | awk \
 	'
 		$1 ~ /\*/ {
@@ -954,15 +954,15 @@ while :; do
 	esac
 done
 
-[ "$CHECK_TRACKER_ERRORS" = 'yes' ] \
+[ "$CHECK_TORRENT_ERRORS" = 'yes' ] \
 && [ $silent -eq 0 ]                \
 && [ $cte -eq 1    ]                \
-&& check_tracker_errors
+&& check_torrent_errors
 
 while [ "$1" != '' ]; do
 	case $1 in
 	-terr)
-		show_tracker_errors
+		show_torrent_errors
 		exit 0
 		;;
 	-dl)

@@ -217,8 +217,9 @@ trop_awk ()
 	## $2..$n - options to pass to AWK function
 
 	local func=${1} ; shift
-	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent}" \
-	                 "-v progname=trop.awk func=${func}"
+	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent}"
+	      # string cannot be split between lines with leading spaces
+	      awkopt="$awkopt -v progname=trop.awk func=${func}"
 	case ${func} in
 	ta)
 		[ ! -f $TROP_TRACKER ] && return $ERR_TRACKER_FILE

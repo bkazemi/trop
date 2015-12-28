@@ -5,18 +5,34 @@ set -e
 
 err ()
 {
+	if [ $force -eq 1 ]; then
+		set +e
+		echo -e "error (ignored):" "$@"
+		return 0
+	fi
 	[ -n "$tmpfile" ] && rm ${tmpfile}
 	echo -e "install.sh stopped - error:" "$@" ; exit 1
 }
 
 trap 'echo ; err "caught signal"' SIGINT
 : ${PREFIX:=${HOME}/.trop}
+force=0
 
 if [ -n "$1" ]; then
+	usage='usage: install.sh [-f] [up]|[update]'
+	notupdate=0
 	case $1 in
-	up|update) break                                   ;;
-	*) echo 'usage: install.sh [up]|[update]' ; exit 1 ;;
+	up|update) break ;;
+	-f) force=1
+		if [ -z "$2" ]; then
+			notupdate=1 ; break
+		elif [ "$2" != 'up' ] && [ "$2" != 'update' ]; then
+			echo $usage ; exit 1
+		fi
+		;;
+	*) echo $usage ; exit 1 ;;
 	esac
+	[ $notupdate -eq 1 ] && break # -f was used for install
 	[ ! -e ${PREFIX} ] && err "\`$PREFIX' doesn't exist"
 	[ ! -d ${PREFIX} ] && err "PREFIX \`$PREFIX' is not a directory!"
 	[ ! -e ${PREFIX}/.is_trop_dir ] && \

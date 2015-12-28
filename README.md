@@ -29,6 +29,11 @@ Starting with trop 1.4.0, you can update the core files through install.sh by su
 Starting with trop 1.6.0, install.sh will also check user modifiable files for updates.
 However, trop.conf _did_ change in v1.6 but cannot be checked as the checksum is cached
 for the first time in this update. **Please update manually!**
+Occasionally, a trivial change to might be added to one of the user modifiable files
+and the hash stored in install.sh won't be updated. Because the hash is then different,
+install.sh will abort with an error. Starting with trop 1.7.7, the -f option was added
+to force install.sh to continue if it encounters any problems. This is useful as a
+temporary solution to the scenario described.
 
 ## Storing tr-remote authentication information
 

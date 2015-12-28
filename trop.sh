@@ -85,8 +85,9 @@ trop_private ()
 		local trout
 		[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
 		trout=$(transmission-remote $(hpc) -n "$AUTH" -st 2>&1) || \
-		{ [ -n "$trout" ] &&                                                  \
-		  printf_wrap "transmission-remote: %s\n" "${trout##*transmission-remote: }"
+		{ [ -n "$trout" ] &&                      \
+		  printf_wrap "transmission-remote: %s\n" \
+		              "${trout##*transmission-remote: }"
 		  die $ERR_TR_CONNECT ;}
 		return 0
 	fi
@@ -216,7 +217,8 @@ trop_awk ()
 	## $2..$n - options to pass to AWK function
 
 	local func=${1} ; shift
-	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent} -v progname=trop.awk func=${func}"
+	local awkopt="awk -f ${srcdir}/trop.awk -v silent=${silent}" \
+	                 "-v progname=trop.awk func=${func}"
 	case ${func} in
 	ta)
 		[ ! -f $TROP_TRACKER ] && return $ERR_TRACKER_FILE
@@ -236,7 +238,8 @@ trop_awk ()
 		[ -z $1 ] && return $ERR_NO_ALIAS
 		local tmp=${func} ; func='tm'
 		if ! [ "$1" = 'tm' ] && [ -z "${1##t[t]*}" ]; then
-			${awkopt} ${1} ${TROP_TRACKER} || return $ERR_NO_MSG # alias not found, awk reports
+			${awkopt} ${1} ${TROP_TRACKER} \
+			|| return $ERR_NO_MSG # alias not found, awk reports
 		fi
 		func=${tmp}
 		${awkopt} "$@" ${TROP_TRACKER} || return $ERR_TROP_AWK
@@ -256,23 +259,26 @@ trop_tracker_total ()
 	[ -z "$1" ] && die $ERR_NO_ALIAS
 	# check if alias is defined
 	echo | trop_awk 'tm' ${1} || die $?
-	local t ta tt tta lst diff difftn diffu s
-	t="$1" tt=1 diffu=0
-	lst="$(trop_torrent l | awk '{ if ($1 !~ /Sum|ID/) print $1 }')" || die $ERR_TID_FAIL
+	local ta tta lst diff difftn s
+	local t="$1" tt=1 diffu=0
+	lst="$(trop_torrent l | awk '{ if ($1 !~ /Sum|ID/) print $1 }')" \
+	|| die $ERR_TID_FAIL
 	[ ! -e "${srcdir}/.cache" ] && \
-		{ mkdir ${srcdir}/.cache || die $ERR_TTT_CACHE ;}
-	[ ! -e "${srcdir}/.cache/"$1"_lstp" ] && \
-		{ echo "$lst" > "${srcdir}/.cache/"${1}"_lstp" || die $ERR_TTT_CACHE ;} \
-	|| diff="$(echo "$lst" | diff --unchanged-line-format='' --old-line-format='' ${srcdir}/.cache/"$1"_lstp -)"
+	{ mkdir ${srcdir}/.cache || die $ERR_TTT_CACHE ;}
+	[ ! -e "${srcdir}/.cache/"$1"_lstp" ] &&                                \
+	{ echo "$lst" > "${srcdir}/.cache/"${1}"_lstp" || die $ERR_TTT_CACHE ;} \
+	|| diff="$(echo "$lst" | diff --unchanged-line-format='' \
+	                         --old-line-format='' ${srcdir}/.cache/"$1"_lstp -)"
 
 	i=1 tac=0
 	_ 'checking all torrent info...'
 	if [ ! -e "${srcdir}/.cache/"$1"_tap" ]; then
 		# first permanent cache
 		_ 'caching all torrent info'
-		ta="$(trop_torrent all i)"
-		echo "$ta" > ${srcdir}/.cache/"$1"_tap && tac=1 && \
-		echo "$ta" | trop_awk 'tth' 'add' > ${srcdir}/.cache/"$1"_thash || die $?
+		ta="$(trop_torrent all i)"                      &&              \
+		echo "$ta" > ${srcdir}/.cache/"$1"_tap && tac=1 &&              \
+		echo "$ta" | trop_awk 'tth' 'add' > ${srcdir}/.cache/"$1"_thash \
+		|| die $?
 	fi
 
 	if [ -n "$diff" ]; then
@@ -301,11 +307,10 @@ trop_tracker_total ()
 	if [ $diffu -eq 1 ]; then
 		s="$(echo "$tta" | trop_awk 'ttd' ${1})" || die $?
 	else
-		[ -e "${srcdir}/.cache/"$1"_ttotal" ] &&                                \
-		{                                                                       \
-		printf "Total downloaded: %s\n" "$(cat "${srcdir}/.cache/"$1"_ttotal")" \
-		|| die $ERR_ALIAS_NOT_FOUND ; exit 0                                    \
-		;}
+		[ -e "${srcdir}/.cache/"$1"_ttotal" ]          \
+		&& printf "Total downloaded: %s\n"             \
+		       "$(cat "${srcdir}/.cache/"$1"_ttotal")" \
+		&& return 0
 		s="$(cat ${srcdir}/.cache/"$1"_tap | trop_awk 'ttd' ${1})"
 	fi
 	local d="$(echo "$s" | awk \
@@ -441,12 +446,15 @@ trop_tracker_add()
 	while :; do
 		case $ast in
 		[Yy]|yes)
-			printf_wrap 'how many trackers would you like to add? > ' ; read numt
+			printf_wrap 'how many trackers would you like to add? > '
+			read numt
 			local numtlen=${#numt}
 			numt=$(echo $numt | tr -Cd '[:digit:]')
 			# if numt != numtlen, then numt
 			# was stripped and thus invalid
-			while [ ! $numt ] || [ $numt -le 0 ] || [ ${#numt} -ne $numtlen ]; do
+			while [ ! $numt               ] ||
+			      [ $numt -le 0           ] ||
+			      [ ${#numt} -ne $numtlen ]; do
 				printf_wrap "enter a valid number > "
 				read numt
 				numtlen=${#numt}
@@ -675,6 +683,8 @@ ERR_TMTLC_SYMLINK=14
 ERR_TMTLC_SAMEDIR=29
 
 # general
+# XXX potential namespace crash with function errors,
+#     unimportant for now
 ERR_NO_MSG=15
 ERR_TR_CONNECT=16
 ERR_TROP_AWK=17
@@ -716,7 +726,8 @@ trop_errors ()
 		_ 'pipe_check(): no input'
 		;;
 	$ERR_TT_UNKNOWN_OPT )
-		_ "trop_torrent(): unknown option, please check tr-remote for valid options."
+		_ "trop_torrent(): unknown option, please check tr-remote for valid"\
+		  "options."
 		;;
 	$ERR_TTT_CACHE )
 		_ 'trop_tracker_total(): caching error'
@@ -729,10 +740,12 @@ trop_errors ()
 		_ 'show_tracker_errors(): no tracker errors detected.'
 		;;
 	$ERR_CTE_PROBLEM )
-		_ "check_tracker_errors(): WARNING: trop detected a tracker error. Use the \`-terr' switch to show more info."
+		_ "check_tracker_errors(): WARNING: trop detected a tracker error."\
+		  "Use the \`-terr' switch to show more info."
 		;;
 	$ERR_TTD_ACT_FAIL )
-		_ 'trop_tracker_done(): failed to perform requested action on torrent' "$2"
+		_ 'trop_tracker_done(): failed to perform requested action on torrent'\
+		  "$2"
 		;;
 	$ERR_TTD_SCHG )
 		_ 'trop_tracker_done(): torrent already scheduled for action'
@@ -744,9 +757,10 @@ trop_errors ()
 		_ 'trop_mtl_common(): you entered the same directory!'
 		;;
 	$ERR_TMTLC_SYMLINK )
-		_  "trop_mtl_common():\n"\
-		   "Transmission currently won't change the location if the current one is a symbolic link\n"\
-		   "to the replacement base or if the relative path is the same. Bailing."
+		_  "trop_mtl_common():\n"                                             \
+		   "Transmission currently won't change the location if the current"  \
+		   "one is a symbolic link to the replacement base or if the relative"\
+		   "path is the same. Bailing."
 		;;
 ## FUNC ERR END $$
 	$ERR_TR_CONNECT )
@@ -1025,7 +1039,8 @@ while [ "$1" != '' ]; do
 		if [ ${#1} -gt 2 ]; then
 			[ ! "$2" ] && die $ERR_BAD_ARGS "for \`-t'"
 			one=${1#-t}
-			echo ${one} | grep -qE '[^0-9,-]' && die $ERR_BAD_FORMAT "for \`-t'"
+			echo ${one} | grep -qE '[^0-9,-]' \
+			&& die $ERR_BAD_FORMAT "for \`-t'"
 			shift
 			savenextopts="$(echo "$@" | sed -r 's/[^\\](&|$)/\\&\1/g')"
 			eval set -- ${one} "$savenextopts"
@@ -1076,7 +1091,8 @@ while [ "$1" != '' ]; do
 		  die $ERR_TR_FAIL ;}
 		[ -n "$trout" ] && echo "$trout"
 		echo "$@" | grep -qE '^-(a|add)' && [ "$ADD_TORRENT_DONE" = 'yes' ] && \
-		tid=$(trop_torrent l | awk '$1 !~ /(ID)|(Sum)/{print $1}' | sort -rn | sed 1q)
+		tid=$(trop_torrent l | awk '$1 !~ /(ID)|(Sum)/{print $1}' | sort -rn \
+		      | sed 1q)
 		[ -n "$tid" ] && trop_torrent_done ${tid} ${ADD_TORRENT_DONE_ACT:-r}
 		exit 0
 		;;

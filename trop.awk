@@ -281,7 +281,7 @@ function tracker_add(alias, primary_tracker, secondary_trackers, tracker_file)
 	print alias, ":", primary_tracker >> tracker_file
 	if (secondary_trackers)
 		for (i in secarr)
-			printf "\t+ "secarr[i]"\n" >> tracker_file
+			printf "\t+ %s\n", secarr[i] >> tracker_file
 
 	return 0
 }
@@ -368,7 +368,7 @@ function seed_ulrate()
 
 function tracker_total()
 {
-	assert($0, "no input")
+	assert($0, "No input. Probably no downloaded files found for this alias.")
 	total = tmpnum = 0
 	do {
 		if ($0 ~ /None/) {
@@ -623,3 +623,4 @@ END {
 		print tdn, "GB" >cachefile
 	}
 }
+# vim: ft=awk:ts=4:sw=4

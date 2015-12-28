@@ -26,3 +26,4 @@ set_auth ()
 [ "$1" = 'seta' ] && set_auth "$2"
 
 return 0
+# vim: ft=sh:ts=4:sw=4

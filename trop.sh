@@ -1156,3 +1156,4 @@ while [ "$1" != '' ]; do
 done
 
 exit 0
+# vim: ft=sh:ts=4:sw=4

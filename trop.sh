@@ -82,9 +82,8 @@ trop_private ()
 	## $2 - the user-specified HOSTPORT/AUTH
 
 	if [ -z "$1" ]; then
-		local trout
 		[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
-		trout=$(transmission-remote $(hpc) -n "$AUTH" -st 2>&1) || \
+		local trout=$(transmission-remote $(hpc) -n "$AUTH" -st 2>&1) || \
 		{ [ -n "$trout" ] &&                      \
 		  printf_wrap "transmission-remote: %s\n" \
 		              "${trout##*transmission-remote: }"
@@ -257,7 +256,6 @@ trop_tracker_total ()
 {
 	## $1 - alias
 
-	[ -z "$1" ] && die $ERR_NO_ALIAS
 	# check if alias is defined
 	echo | trop_awk 'tm' ${1} || die $?
 	local ta tta lst diff difftn s
@@ -327,9 +325,8 @@ trop_torrent ()
 	## [$2] - option paired with torrent ID
 	## [$3] - sub-option
 
-	[ -z "$1" ] && usage
 	local opt
-	if [ -n "$1" ] && [ -z "$2" ]; then
+	if [ -z "$2" ]; then
 		# if there are 3 or more chars then it is a long option
 		# with some exceptions
 		opt=`echo $1 | sed -r 's/^-+//g'`
@@ -453,7 +450,7 @@ trop_tracker_add()
 			numt=$(echo $numt | tr -Cd '[:digit:]')
 			# if numt != numtlen, then numt
 			# was stripped and thus invalid
-			while [ ! $numt               ] ||
+			while [ -z "$numt"            ] ||
 			      [ $numt -le 0           ] ||
 			      [ ${#numt} -ne $numtlen ]; do
 				printf_wrap "enter a valid number > "
@@ -1037,10 +1034,10 @@ while [ "$1" != '' ]; do
 		;;
 	-t|-t[0-9]*)
 		trop_private
+		[ -z "$2" ] && die $ERR_BAD_ARGS "for \`-t'"
 		if [ ${#1} -gt 2 ]; then
-			[ ! "$2" ] && die $ERR_BAD_ARGS "for \`-t'"
 			one=${1#-t}
-			echo ${one} | grep -qE '[^0-9,-]' \
+			[ -z "${one##*[^0-9,-]*}" ] \
 			&& die $ERR_BAD_FORMAT "for \`-t'"
 			shift
 			savenextopts="$(echo "$@" | sed -r 's/[^\\](&|$)/\\&\1/g')"

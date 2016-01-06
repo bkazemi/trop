@@ -1,7 +1,7 @@
 #!/bin/sh
 
 TROP_VERSION=\
-'trop 1.7.7
+'trop 1.7.8
 last checked against: transmission-remote 2.84 (14307)'
 
 # TODO
@@ -82,9 +82,8 @@ trop_private ()
 	## $2 - the user-specified HOSTPORT/AUTH
 
 	if [ -z "$1" ]; then
-		local trout
 		[ $PRIVATE -eq 1 ] || { . ${srcdir}/tropriv.sh ; PRIVATE=1 ;}
-		trout=$(transmission-remote $(hpc) -n "$AUTH" -st 2>&1) || \
+		local trout=$(transmission-remote $(hpc) -n "$AUTH" -st 2>&1) || \
 		{ [ -n "$trout" ] &&                      \
 		  printf_wrap "transmission-remote: %s\n" \
 		              "${trout##*transmission-remote: }"
@@ -257,7 +256,6 @@ trop_tracker_total ()
 {
 	## $1 - alias
 
-	[ -z "$1" ] && die $ERR_NO_ALIAS
 	# check if alias is defined
 	echo | trop_awk 'tm' ${1} || die $?
 	local ta tta lst diff difftn s
@@ -327,9 +325,8 @@ trop_torrent ()
 	## [$2] - option paired with torrent ID
 	## [$3] - sub-option
 
-	[ -z "$1" ] && usage
 	local opt
-	if [ -n "$1" ] && [ -z "$2" ]; then
+	if [ -z "$2" ]; then
 		# if there are 3 or more chars then it is a long option
 		# with some exceptions
 		opt=`echo $1 | sed -r 's/^-+//g'`
@@ -453,7 +450,7 @@ trop_tracker_add()
 			numt=$(echo $numt | tr -Cd '[:digit:]')
 			# if numt != numtlen, then numt
 			# was stripped and thus invalid
-			while [ ! $numt               ] ||
+			while [ -z "$numt"            ] ||
 			      [ $numt -le 0           ] ||
 			      [ ${#numt} -ne $numtlen ]; do
 				printf_wrap "enter a valid number > "
@@ -668,10 +665,10 @@ ERR_TT_UNKNOWN_OPT=12
 ERR_TTT_CACHE=6
 ERR_TTT_TID_FAIL=7
 
-# show_tracker_errors
+# show_torrent_errors
 ERR_STE_NO_PROBLEMS=8
 
-# check_tracker_errors
+# check_torrent_errors
 ERR_CTE_PROBLEM=9
 
 # trop_tracker_done
@@ -738,10 +735,10 @@ trop_errors ()
 		;;
 	$ERR_STE_NO_PROBLEMS )
 		tret=0
-		_ 'show_tracker_errors(): no tracker errors detected.'
+		_ 'show_torrent_errors(): no torrent errors detected.'
 		;;
 	$ERR_CTE_PROBLEM )
-		_ "check_tracker_errors(): WARNING: trop detected a tracker error."\
+		_ "check_torrent_errors(): WARNING: trop detected a torrent error."\
 		  "Use the \`-terr' switch to show more info."
 		;;
 	$ERR_TTD_ACT_FAIL )
@@ -850,7 +847,7 @@ trop_dep ()
 	return $?
 }
 
-check_tracker_errors ()
+check_torrent_errors ()
 {
 	## $1 - silence warning
 
@@ -868,9 +865,9 @@ check_tracker_errors ()
 	return 0
 }
 
-show_tracker_errors ()
+show_torrent_errors ()
 {
-	check_tracker_errors 1 || die $ERR_STE_NO_PROBLEMS
+	check_torrent_errors 1 || die $ERR_STE_NO_PROBLEMS
 	trop_torrent l | awk \
 	'
 		$1 ~ /\*/ {
@@ -954,15 +951,15 @@ while :; do
 	esac
 done
 
-[ "$CHECK_TRACKER_ERRORS" = 'yes' ] \
+[ "$CHECK_TORRENT_ERRORS" = 'yes' ] \
 && [ $silent -eq 0 ]                \
 && [ $cte -eq 1    ]                \
-&& check_tracker_errors
+&& check_torrent_errors
 
 while [ "$1" != '' ]; do
 	case $1 in
 	-terr)
-		show_tracker_errors
+		show_torrent_errors
 		exit 0
 		;;
 	-dl)
@@ -1037,10 +1034,10 @@ while [ "$1" != '' ]; do
 		;;
 	-t|-t[0-9]*)
 		trop_private
+		[ -z "$2" ] && die $ERR_BAD_ARGS "for \`-t'"
 		if [ ${#1} -gt 2 ]; then
-			[ ! "$2" ] && die $ERR_BAD_ARGS "for \`-t'"
 			one=${1#-t}
-			echo ${one} | grep -qE '[^0-9,-]' \
+			[ -z "${one##*[^0-9,-]*}" ] \
 			&& die $ERR_BAD_FORMAT "for \`-t'"
 			shift
 			savenextopts="$(echo "$@" | sed -r 's/[^\\](&|$)/\\&\1/g')"

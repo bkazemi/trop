@@ -499,6 +499,7 @@ trop_mtl_common ()
 		#     exist for --move?
 		if [ "${HOSTPORT%:*}" = 'localhost' ] || \
 		   [ "${HOSTPORT%:*}" = '127.0.0.1' ] || \
+		   [ "${HOSTPORT%:*}" = '::1'       ] || \
 		   [ -z "${HOSTPORT}" ]
 		then
 			# trailing fwd slashes need to stripped
@@ -756,9 +757,9 @@ trop_errors ()
 		;;
 	$ERR_TMTLC_SYMLINK )
 		_  "trop_mtl_common():\n"                                             \
-		   "Transmission currently won't change the location if the current"  \
-		   "one is a symbolic link to the replacement base or if the relative"\
-		   "path is the same. Bailing."
+		   "Transmission currently won't change the location if the current\n"\
+		   "one links to the replacement base or vice versa, or, if a\n"      \
+		   "relative path was supplied, expands to the same location."
 		;;
 ## FUNC ERR END $$
 	$ERR_TR_CONNECT )

@@ -465,6 +465,8 @@ function tracker_dl_info()
 							}
 						}
 						break
+					} else if ($2 ~ /^State: /) {
+						break
 					}
 				}
 			}

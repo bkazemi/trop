@@ -39,7 +39,7 @@ if [ -n "$1" ]; then
 	err "\`$PREFIX' doesn't look like a trop directory\n" \
 	    "\b(if it is, add \`.is_trop_dir' to the directory and restart update)"
 	for file in trop.sh trop.awk trop_torrent_done.sh README LICENSE; do
-		if ! `diff -q "$file" "${PREFIX}/${file}" >/dev/null`; then
+		if ! diff -q "$file" "${PREFIX}/${file}" >/dev/null; then
 			echo "${file} changed, replacing..."
 			case "$file" in
 			trop*)

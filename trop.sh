@@ -404,7 +404,7 @@ trop_rm_tdscript ()
 
 	[ ! -e ${srcdir}/.cache/tdscript ] && return 0
 	cat ${srcdir}/.cache/tdscript | while read tid; do
-		$((nr += 1))
+		: $((nr += 1))
 		if [ "${tid%% *}" = "$1" ]; then
 			sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
 			break
@@ -1118,7 +1118,7 @@ while [ "$1" != '' ]; do
 			[ -n "$tid" ] && trop_torrent_done ${tid} ${ADD_TORRENT_DONE_ACT:-r}
 
 		fi
-		if echo "$@" | grep -qE '-((r|remove)|(R|remove-and-delete))'
+		if echo "$@" | grep -qE '\-((r|remove)|(R|remove-and-delete))'
 		then
 			tid=$(echo "$@" | awk '{ match($0, /-t(orrent)?\s*[0-9]+/)
 		                             s = substr($0, RSTART, RLENGTH)

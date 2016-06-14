@@ -358,8 +358,8 @@ trop_torrent ()
 	Bn|bandwith-normal);;
 	Bl|bandwith-low);;
 	pr|peers) thirdopt=1 ;;
-	r|remove);;
-	R|remove-and-delete);;
+	r|remove)            trop_rm_tdscript "$1" ;;
+	R|remove-and-delete) trop_rm_tdscript "$1" ;;
 	reannounce);;
 	move) thirdopt=1 ;;
 	find) thirdopt=1 ;;
@@ -396,6 +396,24 @@ trop_torrent ()
 	return 0
 }
 
+trop_rm_tdscript ()
+{
+	## $1 - torrent ID
+
+	local nr=0
+
+	[ ! -e ${srcdir}/.cache/tdscript ] && return 0
+	cat ${srcdir}/.cache/tdscript | while read tid; do
+		$((nr += 1))
+		if [ "${tid%% *}" = "$1" ]; then
+			sed -e "${nr}d" -i '' ${srcdir}/.cache/tdscript
+			break
+		fi
+	done
+
+	return 0
+}
+
 trop_torrent_done ()
 {
 	## $1 - torrent ID
@@ -420,7 +438,7 @@ trop_torrent_done ()
 		if [ "$(trop_torrent ${tid_and_cmd%% *} i \
 		        | awk '$1 ~ /^Percent/ { print $3 }')" \
 		     = "100%" ]
-		then
+		then # torrent is done downloading
 			eval trop_torrent $tid_and_cmd 2>>${TROP_LOG_PATH} \
 			|| ldie $ERR_TTD_ACT_FAIL $tid
 			_l "successfully processed command on torrent ${tid_and_cmd%% *}"\
@@ -1089,10 +1107,24 @@ while [ "$1" != '' ]; do
 		  && echo_wrap "transmission-remote:" "${trout##*transmission-remote: }"
 		  die $ERR_TR_FAIL ;}
 		[ -n "$trout" ] && echo "$trout"
-		echo "$@" | grep -qE '^-(a|add)' && [ "$ADD_TORRENT_DONE" = 'yes' ] && \
-		tid=$(trop_torrent l | awk '$1 !~ /(ID)|(Sum)/{print $1}' | sort -rn \
-		      | sed 1q)
-		[ -n "$tid" ] && trop_torrent_done ${tid} ${ADD_TORRENT_DONE_ACT:-r}
+		# XXX racy, as is most td stuff...
+		# I believe transmission sets an env variable to completed torrent,
+		# check back
+		if echo "$@" | grep -qE '^-(a|add)' && [ "$ADD_TORRENT_DONE" = 'yes' ]
+		then
+			tid=$(trop_torrent l | awk '$1 !~ /(ID)|(Sum)/{print $1}' \
+			      | sort -rn                                          \
+		          | sed 1q)
+			[ -n "$tid" ] && trop_torrent_done ${tid} ${ADD_TORRENT_DONE_ACT:-r}
+
+		fi
+		if echo "$@" | grep -qE '-((r|remove)|(R|remove-and-delete))'
+		then
+			tid=$(echo "$@" | awk '{ match($0, /-t(orrent)?\s*[0-9]+/)
+		                             s = substr($0, RSTART, RLENGTH)
+		                             gsub(/[^0-9]/, "", s) ; print s }')
+			[ -n "$tid" ] && trop_rm_tdscript ${tid}
+		fi
 		exit 0
 		;;
 	esac

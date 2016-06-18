@@ -382,7 +382,8 @@ trop_torrent ()
 
 	if [ ${#opt} -gt 2 ] && [ "$opt" != "srd" ] \
 	                     && [ "$opt" != "gsr" ] \
-	                     && [ "$opt" != "GSR" ]; then
+	                     && [ "$opt" != "GSR" ] \
+						 && [ "$opt" != "rad" ]; then
 		opt="--${opt}"
 	else
 		opt="-${opt}"

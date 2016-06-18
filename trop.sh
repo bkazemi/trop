@@ -358,8 +358,8 @@ trop_torrent ()
 	Bn|bandwith-normal);;
 	Bl|bandwith-low);;
 	pr|peers) thirdopt=1 ;;
-	r|remove)            trop_rm_tdscript "$1" ;;
-	R|remove-and-delete) trop_rm_tdscript "$1" ;;
+	r|remove)              trop_rm_tdscript "$1" ;;
+	rad|remove-and-delete) trop_rm_tdscript "$1" ;;
 	reannounce);;
 	move) thirdopt=1 ;;
 	find) thirdopt=1 ;;
